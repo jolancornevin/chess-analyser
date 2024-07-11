@@ -27,3 +27,8 @@ All moves will also be classified as good or not, depending on the engine analys
 
 ## Future improvement
 - https://github.com/gtim/chessdriller
+
+
+# TODO
+- evaluate each move of the game and start classifying them
+- make it possible to visualize a line

@@ -16,13 +16,11 @@ export function Lines({ lines }: LinesProps): JSX.Element {
                 )
             }
 
-            const isMate = line.scoreType === "mate";
-            const score = isMate ? line.score : line.score / 100;
-
             return (
-                <div key={i} style={{ textAlign: "left" }}>
-                    <span style={{ backgroundColor: line.score > 0 ? "white" : "black", color: line.score > 0 ? "black" : "white" }}>
-                        {isMate ? "M" : ""}{score}
+                <div key={i} style={{ height: "68px", textAlign: "left" }}>
+                    {/* TODO fix the colors of evals ???? */}
+                    <span style={{ backgroundColor: line.rawScore > 0 ? "white" : "black", color: line.rawScore > 0 ? "black" : "white" }}>
+                        {line.score}
                     </span>: {line.line} {/* TODO make moves clickables */}
                     
                 </div>

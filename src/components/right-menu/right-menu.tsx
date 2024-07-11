@@ -1,10 +1,9 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 
-import { Chess, Move as CMove } from 'chess.js';
+import { Chess } from 'chess.js';
 import { Line, Move } from "../types";
+import { searchFromFen } from "./engine";
 import { Lines } from "./lines";
-
-const ENGINE_DEPTH = 10;
 
 declare const colors: readonly ["white", "black"];
 declare type Color = typeof colors[number];
@@ -22,72 +21,50 @@ export function RightMenu({chess, setFen, orientation, setOrientation }: RightMe
     const [moves, setMoves] = useState<Move[]>([]);
     const [lines, setLines] = useState<Line[]>([]);
 
-    const engine = useMemo(() => {
-        console.log("getting sf");
-        const engine = eval("stockfish");
-
-        // set number of lines to eval
-        console.log(engine.postMessage("setoption name MultiPV value 3"))
-
-        engine.onmessage = (event: {data: string}) => {
-            let message = event.data;
-            console.log(message)
-            
-            if (message.startsWith(`info depth ${ENGINE_DEPTH}`)) {
-                const regx = message.match(`.*score (?<type>cp|mate) (?<score>.*) nodes.* pv (?<moves>.*)`);
-                
-                if (regx && regx.groups !== undefined) {
-                    setLines((prev) => [
-                        ...prev,
-                        {
-                            score: Number(regx?.groups?.score) || 0,
-                            scoreType: regx?.groups?.type || "",
-                            line: regx?.groups?.moves || "",
-                        }
-                    ])
-                } 
-            }
-        }
-        engine.onerror = (event: any) => {
-            console.log({event});
-        }
-        
-        return engine;
-    }, []);
-
     // Load a game
-    const onPGNChange = useCallback((pgn: string) => {
+    const onPGNChange = useCallback(async (pgn: string) => {
         chess.loadPgn(pgn);
         setFen(chess.fen());
         console.log({ chess });
 
+        let moves: Move[] = [];
+        let index = 0;
         // start computing every move.
-        setMoves(chess.history({ verbose: true }).map((value: CMove, index: number): Move => {
-            return { to: value.to, fen: value.after, number: Math.floor(index / 2) };
-        }));
+        for (const value of chess.history({ verbose: true })) {
+            let _index = index;
+
+            await searchFromFen(value.before, 3).then((lines) => {
+                moves.push(
+                    { to: value.to, fen: value.after, number: Math.floor(_index / 2), eval: (lines.length > 0? lines[0].score: "-") }
+                )
+            });            
+
+            index += 1;
+        }
+        setMoves(moves);
+        
     }, [chess, setFen]);
 
     // Load a move
-    const onMoveClick = useCallback((move: Move) => {
+    const onMoveClick = useCallback(async (move: Move) => {
         setFen(move.fen);
         chess.load(move.fen);
         setLines([]);
-
-        engine.postMessage(`position fen ${move.fen}`);
-        engine.postMessage(`go depth ${ENGINE_DEPTH}`);
-    }, [chess, engine, setFen]);
+        
+        await searchFromFen(move.fen, 3).then((lines) => setLines(lines));
+    }, [chess, setFen]);
 
     return (
         <div style={{  }}>
             <div style={{ flex: 1 }}>
                 {/* Fen: <input value={fen} onChange={e => setFen(e.target.value)} /> */}
-                PGN: <textarea onChange={e => onPGNChange(e.target.value)} />
+                PGN: <textarea onChange={async (e) => await onPGNChange(e.target.value)} />
                 Direction: <input type="checkbox" checked={orientation === "white"} onChange={e => {console.log(e.target.value); setOrientation(e.target.checked ? "white": "black")}} />
             </div>
 
             <Lines lines={lines} />
 
-            <div style={{overflowY:"auto", height: 800, paddingTop: 8}}>
+            <div style={{overflowY:"auto", height: 600, paddingTop: 8}}>
                 <div style={{
                     flex: 1,
                     display: "flex",
@@ -98,10 +75,10 @@ export function RightMenu({chess, setFen, orientation, setOrientation }: RightMe
                         {moves.map((move, i): JSX.Element => {
                             // TODO hightlight current move + hotkey left and right to move from move to move
                             return (
-                                <div key={i}  style={{ width: "50%", cursor: "pointer", textAlign: "left" }} onClick={() => {
-                                    onMoveClick(move)
+                                <div key={i}  style={{ width: "50%", cursor: "pointer", textAlign: "left" }} onClick={async () => {
+                                   await onMoveClick(move)
                                 }}>
-                                    {move.number}. {move.to}
+                                    {move.number}. {move.to} [{move.eval}]
                                 </div>
                             );
                         })
