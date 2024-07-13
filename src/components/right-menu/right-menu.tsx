@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 
 import { Chess } from 'chess.js';
-import { ComputeMoveScore, Line, Move, NewMove } from "../types";
+import { Line, Move, NewMove } from "../types";
 import { engineEval } from "./engine";
 import { Lines } from "./lines";
 import { Moves } from "./moves";
@@ -33,16 +33,7 @@ export function RightMenu({chess, setFen, orientation, setOrientation }: RightMe
         for (const value of chess.history({ verbose: true })) {
             let _index = index;
 
-            console.log("in loop for ", _index);
-
-            const move = NewMove(value, Math.floor(_index / 2) + 1);
-
-            // compute only our moves
-            if (orientation[0] !== move.cmove.color) {
-                moves.push(move)
-            } else {
-                moves.push(await ComputeMoveScore(move));
-            }
+            moves.push(NewMove(_index, value, Math.floor(_index / 2) + 1));
 
             index += 1;
         }
@@ -70,7 +61,7 @@ export function RightMenu({chess, setFen, orientation, setOrientation }: RightMe
             </div>
             <div style={{ marginTop: 8, height: 700}}>
                 <Lines lines={lines} />
-                <Moves moves={moves} onMoveClick={onMoveClick} orientation={orientation} />
+                <Moves _moves={moves} onMoveClick={onMoveClick} orientation={orientation} />
             </div>            
         </div>
     )

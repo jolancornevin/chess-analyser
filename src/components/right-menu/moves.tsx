@@ -1,10 +1,8 @@
 import { Mutex } from "async-mutex";
 import { useCallback, useMemo, useState } from "react";
-import { Move } from "../types";
+import { ComputeMoveScore, Move } from "../types";
 
 interface MoveProps {
-    i: number;
-
     move: Move;
     onMoveClick: (move: Move) => Promise<void>
 
@@ -16,7 +14,7 @@ interface MoveProps {
 
 const mutex = new Mutex();
 
-function MoveUX({ i, move, onMoveClick, currentMove, setCurrentMove, orientation }: MoveProps): JSX.Element {    
+function MoveUX({ move, onMoveClick, currentMove, setCurrentMove, orientation }: MoveProps): JSX.Element {    
     // const [move, setMove] = useState(_move);
     
     useMemo(async () => {
@@ -34,7 +32,6 @@ function MoveUX({ i, move, onMoveClick, currentMove, setCurrentMove, orientation
     }, []);
     
     const noteMove = useCallback((move: Move) => {
-
         if (!move.scoreDiff) {
             if (orientation[0] !== move.cmove.color) {
                 return '';
@@ -59,8 +56,8 @@ function MoveUX({ i, move, onMoveClick, currentMove, setCurrentMove, orientation
     }, [])
 
     return (
-        <div style={{ width: "50%", cursor: "pointer", textAlign: "left", backgroundColor: i === currentMove? "#8b8987": "" }} onClick={async () => {
-            setCurrentMove(i);
+        <div style={{ width: "50%", cursor: "pointer", textAlign: "left", backgroundColor: move.id === currentMove? "#8b8987": "" }} onClick={async () => {
+            setCurrentMove(move.id);
             await onMoveClick(move)
         }}>
             {move.number}. {move.to}: {noteMove(move)} 
@@ -70,13 +67,31 @@ function MoveUX({ i, move, onMoveClick, currentMove, setCurrentMove, orientation
 
 
 interface MovesProps {
-    moves: Move[];
+    _moves: Move[];
     onMoveClick: (move: Move) => Promise<void>
     orientation: string;
 }
 
-export function Moves({ moves, onMoveClick, orientation }: MovesProps): JSX.Element {
+export function Moves({ _moves, onMoveClick, orientation }: MovesProps): JSX.Element {
     const [currentMove, setCurrentMove] = useState(0);
+
+    const iniMoves: Record<number, Move> = Object.assign({}, ..._moves.map((move) => ({ [move.id]: move })));
+
+    const [moves, setMoves] = useState<Record<number, Move>>({});
+
+    useMemo(() => { 
+        // set the init state when props are changed
+        setMoves(iniMoves);
+
+        _moves.forEach((move, i) => {
+            // compute only our moves
+            if (orientation[0] === move.cmove.color) {
+                ComputeMoveScore(move).then((scoredMove) => {
+                    setMoves((prevMoves) => { console.log({prevMoves, scoredMove});  return ({ ...prevMoves, [scoredMove.id]: scoredMove })});
+                });
+            }
+        });
+    }, [_moves, orientation, setMoves]);
     
     return (
         <div style={{ overflowY: "auto", height: 600, marginTop: 8, border: "1px solid white",  }}>
@@ -87,10 +102,10 @@ export function Moves({ moves, onMoveClick, orientation }: MovesProps): JSX.Elem
                 flexWrap: "wrap",
                 width: "100%"
             }}>
-                {moves.map((move, i): JSX.Element => {
+                {Object.values(moves).map((move, i): JSX.Element => {
                     // TODO hightlight current move + hotkey left and right to move from move to move
                     return (
-                        <MoveUX key={i} i={i} move={move} onMoveClick={onMoveClick} currentMove={currentMove} setCurrentMove={setCurrentMove} orientation={orientation}/>
+                        <MoveUX key={move.id} move={move} onMoveClick={onMoveClick} currentMove={currentMove} setCurrentMove={setCurrentMove} orientation={orientation}/>
                     );
                 })}
             </div>

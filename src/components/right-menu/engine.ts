@@ -3,15 +3,13 @@ import { Line, NewLine } from "../types";
 
 export const ENGINE_DEPTH = 15;
 
-const META = {
-    engine: null
+interface Engine {
+    postMessage(string): void;
+    onmessage(string): void;
+    onerror(string): void;
 }
 
-export async function getEngine() {
-    if (META.engine) {
-        return META.engine
-    }
-
+export async function getEngine(): Promise<Engine> {
     const engine = eval("stockfish");
 
     engine.onerror = (event: any) => {
@@ -61,7 +59,6 @@ export async function _engineEval(fen: string, nbLines: number): Promise<Line[]>
             resolve(lines.sort((a, b) => (a.rawScore - b.rawScore)));
         }, 10000);
     
-
         const engine = await getEngine();
         // set number of lines to eval
         engine.postMessage(`setoption name MultiPV value ${nbLines}`)
@@ -87,7 +84,7 @@ export async function _engineEval(fen: string, nbLines: number): Promise<Line[]>
                     lines.push(line)
 
                     if (isNaN(line.rawScore)) {
-                        console.error('ERRROR', {line, regx})
+                        console.error('ERROR', {line, regx})
                     }
 
                     if (lines.length === nbLines) {
