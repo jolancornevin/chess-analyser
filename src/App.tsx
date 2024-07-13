@@ -11,7 +11,7 @@ import "chessground/assets/chessground.cburnett.css";
 function App() {
   return (
     <div className="App">
-      <header className="App-header">        
+      <header className="background">        
         <ChessUX />
       </header>
     </div>

@@ -15,7 +15,6 @@ export function ChessUX({ }: ChessUXProps): JSX.Element {
 
     const chess = useMemo(() => new Chess(), []);
 
-
     return (
         <div style={{ display: 'flex', flexDirection: 'row' }}>
             <div style={{ flex: 2 }}>
@@ -35,6 +34,8 @@ export function ChessUX({ }: ChessUXProps): JSX.Element {
                     },
                 }} />
             </div>
-            <RightMenu chess={chess} orientation={orientation} setOrientation={setOrientation} setFen={setFen} />
+            <div style={{ marginLeft: 16, width: 500, backgroundColor: "#312e2b", padding: 16 }}>
+                <RightMenu chess={chess} orientation={orientation} setOrientation={setOrientation} setFen={setFen} />
+            </div>
     </div>)
 };

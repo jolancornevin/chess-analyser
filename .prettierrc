@@ -1,0 +1,20 @@
+{
+  "useTabs": false,
+  "tabWidth": 2,
+  "plugins": ["@trivago/prettier-plugin-sort-imports"],
+  "importOrder": [
+    "^next$",
+    "^next/",
+    "^react$",
+    "<THIRD_PARTY_MODULES>",
+    "@mui",
+    "@work4Labs",
+    "^@[api|components|constants|lib|pages|public|styledcomponents|typings|utils|locales](.*)$",
+    "^@(.*)$",
+    "^(.*)/types$",
+    "^[./]"
+  ],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true,
+  "printWidth": 120
+}

@@ -1,9 +1,10 @@
 import { useCallback, useState } from "react";
 
 import { Chess } from 'chess.js';
-import { Line, Move } from "../types";
-import { searchFromFen } from "./engine";
+import { ComputeMoveScore, Line, Move, NewMove } from "../types";
+import { engineEval } from "./engine";
 import { Lines } from "./lines";
+import { Moves } from "./moves";
 
 declare const colors: readonly ["white", "black"];
 declare type Color = typeof colors[number];
@@ -24,26 +25,32 @@ export function RightMenu({chess, setFen, orientation, setOrientation }: RightMe
     // Load a game
     const onPGNChange = useCallback(async (pgn: string) => {
         chess.loadPgn(pgn);
-        setFen(chess.fen());
-        console.log({ chess });
 
-        let moves: Move[] = [];
+        const moves: Move[] = [];
         let index = 0;
+
         // start computing every move.
         for (const value of chess.history({ verbose: true })) {
             let _index = index;
 
-            await searchFromFen(value.before, 3).then((lines) => {
-                moves.push(
-                    { to: value.to, fen: value.after, number: Math.floor(_index / 2), eval: (lines.length > 0? lines[0].score: "-") }
-                )
-            });            
+            console.log("in loop for ", _index);
+
+            const move = NewMove(value, Math.floor(_index / 2) + 1);
+
+            // compute only our moves
+            if (orientation[0] !== move.cmove.color) {
+                moves.push(move)
+            } else {
+                moves.push(await ComputeMoveScore(move));
+            }
 
             index += 1;
         }
+
+        setFen(chess.fen());
         setMoves(moves);
         
-    }, [chess, setFen]);
+    }, [chess, setFen, orientation]);
 
     // Load a move
     const onMoveClick = useCallback(async (move: Move) => {
@@ -51,40 +58,20 @@ export function RightMenu({chess, setFen, orientation, setOrientation }: RightMe
         chess.load(move.fen);
         setLines([]);
         
-        await searchFromFen(move.fen, 3).then((lines) => setLines(lines));
+        await engineEval(move.fen, 3).then((lines) => setLines(lines));
     }, [chess, setFen]);
 
     return (
-        <div style={{  }}>
-            <div style={{ flex: 1 }}>
+        <div>
+            <div style={{ flex: 1, border: "1px solid white" }}>
                 {/* Fen: <input value={fen} onChange={e => setFen(e.target.value)} /> */}
                 PGN: <textarea onChange={async (e) => await onPGNChange(e.target.value)} />
-                Direction: <input type="checkbox" checked={orientation === "white"} onChange={e => {console.log(e.target.value); setOrientation(e.target.checked ? "white": "black")}} />
+                Playing as {orientation}: <input type="checkbox" checked={orientation === "white"} onChange={e => {setOrientation(e.target.checked ? "white": "black")}} />
             </div>
-
-            <Lines lines={lines} />
-
-            <div style={{overflowY:"auto", height: 600, paddingTop: 8}}>
-                <div style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "row",
-                    flexWrap: "wrap",
-                    width: "100%"
-                    }}>
-                        {moves.map((move, i): JSX.Element => {
-                            // TODO hightlight current move + hotkey left and right to move from move to move
-                            return (
-                                <div key={i}  style={{ width: "50%", cursor: "pointer", textAlign: "left" }} onClick={async () => {
-                                   await onMoveClick(move)
-                                }}>
-                                    {move.number}. {move.to} [{move.eval}]
-                                </div>
-                            );
-                        })
-                    }
-                </div>
-            </div>
+            <div style={{ marginTop: 8, height: 700}}>
+                <Lines lines={lines} />
+                <Moves moves={moves} onMoveClick={onMoveClick} orientation={orientation} />
+            </div>            
         </div>
     )
 }
