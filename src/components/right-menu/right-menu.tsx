@@ -12,13 +12,14 @@ declare type Color = typeof colors[number];
 interface RightMenuProps {
     chess: Chess;
 
+    setLastMove: React.Dispatch<React.SetStateAction<any[]>>;
     setFen: React.Dispatch<React.SetStateAction<string>>;
 
     orientation: Color;
     setOrientation: React.Dispatch<React.SetStateAction<Color>>;
 }
 
-export function RightMenu({chess, setFen, orientation, setOrientation }: RightMenuProps): JSX.Element {
+export function RightMenu({chess, setFen, setLastMove, orientation, setOrientation }: RightMenuProps): JSX.Element {
     const [moves, setMoves] = useState<Move[]>([]);
     const [lines, setLines] = useState<Line[]>([]);
 
@@ -47,6 +48,8 @@ export function RightMenu({chess, setFen, orientation, setOrientation }: RightMe
     // Load a move
     const onMoveClick = useCallback(async (move: Move) => {
         setFen(move.fen);
+        setLastMove([move.cmove.from, move.cmove.to]);
+        
         chess.load(move.fen);
         setLines([]);
         

@@ -12,6 +12,7 @@ interface ChessUXProps {}
 export function ChessUX({ }: ChessUXProps): JSX.Element {
     const [orientation, setOrientation] = useState<Color>("white");
     const [fen, setFen] = useState('');
+    const [lastMove, setLastMove] = useState([]);
 
     const chess = useMemo(() => new Chess(), []);
 
@@ -20,6 +21,7 @@ export function ChessUX({ }: ChessUXProps): JSX.Element {
             <div style={{ flex: 2 }}>
                 <Chessground config={{
                     fen: fen,
+                    lastMove: lastMove,
                     orientation: orientation,
                     autoCastle: true,
                     highlight: {
@@ -35,7 +37,7 @@ export function ChessUX({ }: ChessUXProps): JSX.Element {
                 }} />
             </div>
             <div style={{ marginLeft: 16, width: 500, backgroundColor: "#312e2b", padding: 16 }}>
-                <RightMenu chess={chess} orientation={orientation} setOrientation={setOrientation} setFen={setFen} />
+                <RightMenu chess={chess} orientation={orientation} setOrientation={setOrientation} setFen={setFen} setLastMove={setLastMove} />
             </div>
     </div>)
 };
