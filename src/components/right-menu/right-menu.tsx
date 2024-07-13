@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 
 import { Chess } from 'chess.js';
-import { Line, Move, NewMove } from "../types";
+import { Line, Move, NewMove, resetEngineCache } from "../types";
 import { engineEval } from "./engine";
 import { Lines } from "./lines";
 import { Moves } from "./moves";
@@ -25,6 +25,7 @@ export function RightMenu({chess, setFen, orientation, setOrientation }: RightMe
     // Load a game
     const onPGNChange = useCallback(async (pgn: string) => {
         chess.loadPgn(pgn);
+        resetEngineCache();
 
         const moves: Move[] = [];
         let index = 0;

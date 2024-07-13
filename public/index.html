@@ -41,7 +41,11 @@
     -->
   </body>
   <script>
-    // console.log("creating sf"); 
-    window.stockfish = new Worker("%PUBLIC_URL%/stockfish.js");
+    window.stockfish = new Worker("%PUBLIC_URL%/stockfish.js#stockfish.wasm");
+
+    // (async () => {
+    //   const wasm = await import("stockfish");
+    //   console.log({wasm})
+    // })()
   </script>
 </html>

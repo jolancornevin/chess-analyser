@@ -1,7 +1,7 @@
 import { Mutex } from "async-mutex";
 import { Line, NewLine } from "../types";
 
-export const ENGINE_DEPTH = 15;
+export const ENGINE_DEPTH = 10;
 
 interface Engine {
     postMessage(string): void;

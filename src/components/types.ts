@@ -49,7 +49,11 @@ export function NewMove(id: number, value: cMove, moveNumber: number): Move {
     }
 }
 
-const cache = {};
+let cache = {};
+
+export function resetEngineCache() {
+    cache = {};
+}
 
 export async function ComputeMoveScore(move: Move): Promise<Move> {   
     if (!cache[move.id]) {
