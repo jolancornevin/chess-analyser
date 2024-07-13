@@ -37,6 +37,8 @@ export interface Move {
 
     scoreBefore?: number;
     scoreAfter?: number;
+
+    wasOnlyMore?: boolean;
 }
 export function NewMove(id: number, value: cMove, moveNumber: number): Move {
     return {
@@ -86,14 +88,16 @@ export async function ComputeMoveScore(move: Move): Promise<Move> {
     
                         scoreDiff = bestLineBefore.rawScore - bestLineAfter.rawScore;
                         
-                        console.log({ moveNumber: move.number, linesBefore, bestLineBefore, winPercentBefore, linesAfter, bestLineAfter, winPercentAfter, accuracy, scoreDiff });
-                        // if (scoreDiff < 0) {
-                        // }
-    
-                        // TODO think more about the evals I want
-                        // I need to compare the score AFTER the move VS the best line BEFORE the move (+all other metrics)
-                        // If I want a graph, then I want the best score BEFORE each move.
-    
+                        let wasOnlyMore = (
+                            // engine found more than one line
+                            linesBefore.length >= 2
+                            // the diff between the first line and seconde is high
+                            && linesBefore[0].rawScore > linesBefore[1].rawScore + 200
+                            // and we played the move
+                            && linesBefore[0].line.startsWith(move.cmove.lan)
+                        );
+                        
+                        console.log({ moveNumber: move.number, move, linesBefore, bestLineBefore, winPercentBefore, linesAfter, bestLineAfter, winPercentAfter, accuracy, scoreDiff });
                         const newMove = {
                             ...move,
     
@@ -102,6 +106,8 @@ export async function ComputeMoveScore(move: Move): Promise<Move> {
             
                             scoreBefore: bestLineBefore.rawScore,
                             scoreAfter: bestLineAfter.rawScore,
+
+                            wasOnlyMore: wasOnlyMore,
                         };
     
                         resolve(newMove);

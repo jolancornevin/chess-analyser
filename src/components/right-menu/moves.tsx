@@ -1,4 +1,3 @@
-import { Mutex } from "async-mutex";
 import { useCallback, useMemo, useState } from "react";
 import { ComputeMoveScore, Move } from "../types";
 
@@ -12,47 +11,34 @@ interface MoveProps {
     orientation: string;
 }
 
-const mutex = new Mutex();
-
 function MoveUX({ move, onMoveClick, currentMove, setCurrentMove, orientation }: MoveProps): JSX.Element {    
     // const [move, setMove] = useState(_move);
     
-    useMemo(async () => {
-        // compute only our moves
-        if (orientation[0] !== move.cmove.color) {
-            return;
-        }
-
-        // const release = await mutex.acquire();
-        
-        // const computedMove = await ComputeMoveScore(_move);
-        
-        // setMove(computedMove);
-        // release();
-    }, []);
-    
-    const noteMove = useCallback((move: Move) => {
+    const noteMove = useCallback((move: Move): JSX.Element => {
         if (!move.scoreDiff) {
             if (orientation[0] !== move.cmove.color) {
-                return '';
+                return <></>;
             }
 
-            return 'loading';
+            return <>loading</>;
         }
 
-        if (move.scoreDiff < 20) {
-            return ''
-        }
+        let score: JSX.Element[] = [];
 
         if (move.scoreDiff < 60) {
-            return move.scoreBefore > move.scoreAfter ? 'Meh' : '';
+        } else if (move.scoreDiff < 80) {
+            score.push(<>{move.scoreBefore > move.scoreAfter ? <img height={15} src="mistake.png"/> : ''}</>);
+        } else if (move.scoreDiff < 150) {
+            score.push( <>{move.scoreBefore > move.scoreAfter ? <img height={15} src="misstake.png"/> : ''}</>);
+        } else {
+            score.push(<>{move.scoreBefore > move.scoreAfter ? <img height={15} src="blunter.png"/> : ''}</>);
         }
 
-        if (move.scoreDiff < 150) {
-            return move.scoreBefore > move.scoreAfter ? 'Oops' : '';
+        if (move.wasOnlyMore) {
+            score.push(<img height={15} src="onlymove.png"/>);
         }
 
-        return move.scoreBefore > move.scoreAfter ? 'Blunter' : '';
+        return <>{score}</>;
     }, [])
 
     return (
@@ -80,14 +66,16 @@ export function Moves({ _moves, onMoveClick, orientation }: MovesProps): JSX.Ele
     const [moves, setMoves] = useState<Record<number, Move>>({});
 
     useMemo(() => { 
-        // set the init state when props are changed
-        setMoves(iniMoves);
+        if (Object.keys(moves).length !== Object.keys(iniMoves).length) {
+            // set the init state when props are changed
+            setMoves(iniMoves);
+        }
 
         _moves.forEach((move, i) => {
             // compute only our moves
             if (orientation[0] === move.cmove.color) {
                 ComputeMoveScore(move).then((scoredMove) => {
-                    setMoves((prevMoves) => { console.log({prevMoves, scoredMove});  return ({ ...prevMoves, [scoredMove.id]: scoredMove })});
+                    setMoves((prevMoves) => { return ({ ...prevMoves, [scoredMove.id]: scoredMove })});
                 });
             }
         });
