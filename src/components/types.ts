@@ -38,8 +38,10 @@ export interface Move {
     scoreBefore?: number;
     scoreAfter?: number;
 
-    wasOnlyMore?: boolean;
+    wasOnlyMove?: boolean;
+    playedOnlyMove?: boolean;
 }
+
 export function NewMove(id: number, value: cMove, moveNumber: number): Move {
     return {
         id: id,
@@ -88,11 +90,15 @@ export async function ComputeMoveScore(move: Move): Promise<Move> {
     
                         scoreDiff = bestLineBefore.rawScore - bestLineAfter.rawScore;
                         
-                        let wasOnlyMore = (
+                        let wasOnlyMove = (
                             // engine found more than one line
                             linesBefore.length >= 2
                             // the diff between the first line and seconde is high
                             && linesBefore[0].rawScore > linesBefore[1].rawScore + 200
+                        );
+                        
+                        let playedOnlyMove = (
+                            wasOnlyMove
                             // and we played the move
                             && linesBefore[0].line.startsWith(move.cmove.lan)
                         );
@@ -107,7 +113,8 @@ export async function ComputeMoveScore(move: Move): Promise<Move> {
                             scoreBefore: bestLineBefore.rawScore,
                             scoreAfter: bestLineAfter.rawScore,
 
-                            wasOnlyMore: wasOnlyMore,
+                            wasOnlyMove: wasOnlyMove,
+                            playedOnlyMove: playedOnlyMove,
                         };
     
                         resolve(newMove);

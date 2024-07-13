@@ -31,10 +31,15 @@ function MoveUX({ move, onMoveClick, currentMove, setCurrentMove, orientation }:
         } else if (move.scoreDiff < 150) {
             score.push( <>{move.scoreBefore > move.scoreAfter ? <img height={15} src="misstake.png"/> : ''}</>);
         } else {
-            score.push(<>{move.scoreBefore > move.scoreAfter ? <img height={15} src="blunter.png"/> : ''}</>);
+
+            if (move.wasOnlyMove && !move.playedOnlyMove) {
+                score.push(<>{move.scoreBefore > move.scoreAfter ? <img height={15} src="miss.png"/> : ''}</>);
+            } else {
+                score.push(<>{move.scoreBefore > move.scoreAfter ? <img height={15} src="blunter.png"/> : ''}</>);
+            }
         }
 
-        if (move.wasOnlyMore) {
+        if (move.wasOnlyMove && move.playedOnlyMove) {
             score.push(<img height={15} src="onlymove.png"/>);
         }
 
