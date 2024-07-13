@@ -9,14 +9,20 @@ interface Engine {
     onerror(string): void;
 }
 
+let engine = null;
+
 export async function getEngine(): Promise<Engine> {
-    const engine = eval("stockfish");
+    if (engine) {
+        return engine
+    }
+    
+    engine = eval("stockfish");
 
     engine.onerror = (event: any) => {
         console.error({event});
     }
 
-    return new Promise((resolve) => {
+    await new Promise((resolve) => {
         engine.postMessage(`isready`);
         engine.onmessage = (event: { data: string }) => {
             let message = event.data;
@@ -24,8 +30,9 @@ export async function getEngine(): Promise<Engine> {
                 resolve(engine);
             }
         }
-
     });
+
+    return engine;
 }
 
 const mutex = new Mutex();
@@ -62,8 +69,10 @@ export async function _engineEval(fen: string, nbLines: number): Promise<Line[]>
         const engine = await getEngine();
         // set number of lines to eval
         engine.postMessage(`setoption name MultiPV value ${nbLines}`)
+        engine.postMessage(`setoption name UCI_ShowWDL value true`)
     
         engine.postMessage(`ucinewgame`);
+        
         engine.postMessage(`position fen ${fen}`);
         engine.postMessage(`go depth ${ENGINE_DEPTH}`);
         // console.log('-------------');
@@ -71,7 +80,7 @@ export async function _engineEval(fen: string, nbLines: number): Promise<Line[]>
             
         engine.onmessage = (event: { data: string }) => {
             let message = event.data;
-            // console.log(message);
+            console.log(message);
 
             if (message.startsWith(`info depth ${ENGINE_DEPTH}`)) {
                 // console.log(message);

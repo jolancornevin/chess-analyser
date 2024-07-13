@@ -15,7 +15,7 @@ function MoveUX({ move, onMoveClick, currentMove, setCurrentMove, orientation }:
     // const [move, setMove] = useState(_move);
     
     const noteMove = useCallback((move: Move): JSX.Element => {
-        if (!move.scoreDiff) {
+        if (!move.scoreComputed) {
             if (orientation[0] !== move.cmove.color) {
                 return <></>;
             }
@@ -44,7 +44,7 @@ function MoveUX({ move, onMoveClick, currentMove, setCurrentMove, orientation }:
         }
 
         return <>{score}</>;
-    }, [])
+    }, [orientation])
 
     return (
         <div style={{ width: "50%", cursor: "pointer", textAlign: "left", backgroundColor: move.id === currentMove? "#8b8987": "" }} onClick={async () => {
@@ -70,20 +70,25 @@ export function Moves({ _moves, onMoveClick, orientation }: MovesProps): JSX.Ele
 
     const [moves, setMoves] = useState<Record<number, Move>>({});
 
-    useMemo(() => { 
+    useMemo(async () => { 
         if (Object.keys(moves).length !== Object.keys(iniMoves).length) {
             // set the init state when props are changed
             setMoves(iniMoves);
         }
-
-        _moves.forEach((move, i) => {
-            // compute only our moves
-            if (orientation[0] === move.cmove.color) {
-                ComputeMoveScore(move).then((scoredMove) => {
-                    setMoves((prevMoves) => { return ({ ...prevMoves, [scoredMove.id]: scoredMove })});
-                });
-            }
-        });
+        
+        const size = 20;
+        for (let i=0; i<_moves.length; i+=size) {
+            await Promise.all(
+                _moves.slice(i, i + size)
+                    // compute only our moves
+                    .filter((move) => (orientation[0] === move.cmove.color))
+                    .map((move) => {
+                        return ComputeMoveScore(move).then((scoredMove) => {
+                            setMoves((prevMoves) => { return ({ ...prevMoves, [scoredMove.id]: scoredMove }) });
+                        });
+                    })
+            );
+        }
     }, [_moves, orientation, setMoves]);
     
     return (

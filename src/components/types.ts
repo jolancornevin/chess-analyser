@@ -31,6 +31,8 @@ export interface Move {
     to: string; // move (d4)
     fen: string;
     
+    scoreComputed: boolean;
+
     cmove?: cMove;
     scoreDiff?: number;
     accuracy?: number;
@@ -50,6 +52,8 @@ export function NewMove(id: number, value: cMove, moveNumber: number): Move {
         fen: value.after,
         number: moveNumber,
         cmove: value,
+
+        scoreComputed: false,
     }
 }
 
@@ -107,6 +111,8 @@ export async function ComputeMoveScore(move: Move): Promise<Move> {
                         const newMove = {
                             ...move,
     
+                            scoreComputed: true,
+
                             scoreDiff: scoreDiff, // (linesBefore.length > 0 ? linesBefore[0].score : "-")
                             accuracy: accuracy,
             
