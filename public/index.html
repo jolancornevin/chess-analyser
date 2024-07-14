@@ -24,7 +24,7 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>Chess</title>  
+    <title>Chess</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -43,7 +43,7 @@
   <script src="./stockfish/stockfish-nnue-16.js"></script>
   <script>
     window.stockfish = new Worker("./stockfish/stockfish-nnue-16.js#stockfish-nnue-16.wasm");
-    
+
     const isSupported = () => {
       if (typeof WebAssembly !== "object") {
         return false;
@@ -75,64 +75,68 @@
     // })()
   </script>
 
-  <!-- <script src="./stockfish.js"></script>
+  <!-- <script src="./stockfish.js"></script>-->
   <script>
-    const importObject = {
-      a: { 
-        a: new WebAssembly.Memory({ initial: 8192, maximum: 8192, shared: true }),
-        b: (arg) => console.log(arg),
-        c: (arg) => console.log(arg),
-        d: (arg) => console.log(arg),
-        e: (arg) => console.log(arg),
-        f: (arg) => console.log(arg),
-        g: (arg) => console.log(arg),
-        h: (arg) => console.log(arg),
-        i: (arg) => console.log(arg),
-        j: (arg) => console.log(arg),
-        k: (arg) => console.log(arg),
-        l: (arg) => console.log(arg),
-        m: (arg) => console.log(arg),
-        n: (arg) => console.log(arg),
-        o: (arg) => console.log(arg),
-        p: (arg) => console.log(arg),
-        q: (arg) => console.log(arg),
-        r: (arg) => console.log(arg),
-        s: (arg) => console.log(arg),
-        t: (arg) => console.log(arg),
-        u: (arg) => console.log(arg),
-        v: (arg) => console.log(arg),
-        w: (arg) => console.log(arg),
-        x: (arg) => console.log(arg),
-        y: (arg) => console.log(arg),
-        z: (arg) => console.log(arg),
-        A: (arg) => console.log(arg),
-        B: (arg) => console.log(arg),
-        C: (arg) => console.log(arg),
-        D: (arg) => console.log(arg),
-        E: (arg) => console.log(arg),
-        F: (arg) => console.log(arg),
-        G: (arg) => console.log(arg),
-        H: (arg) => console.log(arg),
-        I: (arg) => console.log(arg),
-        J: (arg) => console.log(arg),
-        K: (arg) => console.log(arg),
-        L: (arg) => console.log(arg),
-        M: (arg) => console.log(arg),
-        N: (arg) => console.log(arg),
-        O: (arg) => console.log(arg),
-        P: (arg) => console.log(arg),
-        Q: (arg) => console.log(arg),
-      },
-    };
+    // const importObject = {
+    //   a: {
+    //     a: new WebAssembly.Memory({ initial: 8192, maximum: 8192, shared: true }),
+    //     b: (arg) => console.log(arg),
+    //     c: (arg) => console.log(arg),
+    //     d: (arg) => console.log(arg),
+    //     e: (arg) => console.log(arg),
+    //     f: (arg) => console.log(arg),
+    //     g: (arg) => console.log(arg),
+    //     h: (arg) => console.log(arg),
+    //     i: (arg) => console.log(arg),
+    //     j: (arg) => console.log(arg),
+    //     k: (arg) => console.log(arg),
+    //     l: (arg) => console.log(arg),
+    //     m: (arg) => console.log(arg),
+    //     n: (arg) => console.log(arg),
+    //     o: (arg) => console.log(arg),
+    //     p: (arg) => console.log(arg),
+    //     q: (arg) => console.log(arg),
+    //     r: (arg) => console.log(arg),
+    //     s: (arg) => console.log(arg),
+    //     t: (arg) => console.log(arg),
+    //     u: (arg) => console.log(arg),
+    //     v: (arg) => console.log(arg),
+    //     w: (arg) => console.log(arg),
+    //     x: (arg) => console.log(arg),
+    //     y: (arg) => console.log(arg),
+    //     z: (arg) => console.log(arg),
+    //     A: (arg) => console.log(arg),
+    //     B: (arg) => console.log(arg),
+    //     C: (arg) => console.log(arg),
+    //     D: (arg) => console.log(arg),
+    //     E: (arg) => console.log(arg),
+    //     F: (arg) => console.log(arg),
+    //     G: (arg) => console.log(arg),
+    //     H: (arg) => console.log(arg),
+    //     I: (arg) => console.log(arg),
+    //     J: (arg) => console.log(arg),
+    //     K: (arg) => console.log(arg),
+    //     L: (arg) => console.log(arg),
+    //     M: (arg) => console.log(arg),
+    //     N: (arg) => console.log(arg),
+    //     O: (arg) => console.log(arg),
+    //     P: (arg) => console.log(arg),
+    //     Q: (arg) => console.log(arg),
+    //   },
+    // };
 
-    WebAssembly.instantiateStreaming(fetch("%PUBLIC_URL%/stockfish.wasm"), importObject).then(
-      (obj) => {
-        console.log({obj})
-        // const fn = obj.instance.exports.exported_func();
-        // console.log({fn})
-        // return fn
-      },
-    );
+    // fetch("./stockfish.wasm")
+    //   .then((response) => response.arrayBuffer())
+    //   .then((arrayBuffer) => {
+    //     WebAssembly.instantiateStreaming(arrayBuffer, importObject).then(
+    //       (obj) => {
+    //         console.log({obj}, obj());
+    //         // const fn = obj.instance.exports.exported_func();
+    //         // console.log({fn})
+    //         // return fn
+    //       },
+    //     );
+    //   });
     // let importObject = {};
 
     // fetch("./stockfish.wasm")
@@ -159,8 +163,8 @@
     //     return WebAssembly.instantiate(bytes, importObject);
     //   })
     //   .then((results) => {
-    //     console.log({results}); 
+    //     console.log({results});
     //   });
 
-  </script> -->
+  </script>
 </html>

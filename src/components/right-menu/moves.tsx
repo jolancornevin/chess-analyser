@@ -34,6 +34,7 @@ function MoveUX({ move, onMoveClick, currentMove, setCurrentMove, orientation }:
             if (move.wasOnlyMove && !move.playedOnlyMove) {
                 score.push(<>{move.scoreBefore > move.scoreAfter ? <img height={15} src="img/miss.png"/> : ''}</>);
             } else {
+                // TODO blunter only if we love a piece or it's mate
                 score.push(<>{move.scoreBefore > move.scoreAfter ? <img height={15} src="img/blunter.png"/> : ''}</>);
             }
         }

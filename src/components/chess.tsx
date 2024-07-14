@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import Chessground from "@react-chess/chessground";
 import { Chess } from 'chess.js';
 import { DrawShape } from "chessground/draw";
+import * as cg from 'chessground/types';
 import { RightMenu } from "./right-menu/right-menu";
 
 declare const colors: readonly ["white", "black"];
@@ -38,6 +39,16 @@ export function ChessUX({ }: ChessUXProps): JSX.Element {
                         autoShapes: shape?[
                             shape,
                         ]: []
+                    },
+                    events: {
+                        change: () => {console.log("change")},
+                        move: (orig: cg.Key, dest: cg.Key, capturedPiece?: cg.Piece) => {
+                            // TODO create move variant
+                            console.log("move")
+                        },
+                        dropNewPiece: (piece: cg.Piece, key: cg.Key) => {console.log("dropNewPiece")},
+                        select: (key: cg.Key) => {console.log("select")},
+                        insert: (elements: cg.Elements) => {console.log("insert")},
                     },
                 }} />
             </div>

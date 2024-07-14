@@ -54,7 +54,7 @@ export function RightMenu({chess, setFen, setLastMove, orientation, setOrientati
     const onMoveClick = useCallback(async (move: Move) => {
         setFen(move.fen);
         setLastMove([move.cmove.from, move.cmove.to]);
-        setShape({ orig: move.bestMove.slice(0, 2) as cg.Key, dest: move.bestMove.slice(2, 4) as cg.Key, brush: "green" });
+        setShape({ orig: move.bestMove?.slice(0, 2) as cg.Key, dest: move.bestMove?.slice(2, 4) as cg.Key, brush: "green" });
         
         chess.load(move.fen);
         setLines([]);
