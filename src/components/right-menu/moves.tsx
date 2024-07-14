@@ -27,20 +27,48 @@ function MoveUX({ move, onMoveClick, currentMove, setCurrentMove, orientation }:
 
         if (move.scoreDiff < 60) {
         } else if (move.scoreDiff < 80) {
-            score.push(<>{move.scoreBefore > move.scoreAfter ? <img height={15} src="mistake.png"/> : ''}</>);
+            score.push(<>{move.scoreBefore > move.scoreAfter ? <img height={15} src="img/mistake.png"/> : ''}</>);
         } else if (move.scoreDiff < 150) {
-            score.push( <>{move.scoreBefore > move.scoreAfter ? <img height={15} src="misstake.png"/> : ''}</>);
+            score.push( <>{move.scoreBefore > move.scoreAfter ? <img height={15} src="img/misstake.png"/> : ''}</>);
         } else {
-
             if (move.wasOnlyMove && !move.playedOnlyMove) {
-                score.push(<>{move.scoreBefore > move.scoreAfter ? <img height={15} src="miss.png"/> : ''}</>);
+                score.push(<>{move.scoreBefore > move.scoreAfter ? <img height={15} src="img/miss.png"/> : ''}</>);
             } else {
-                score.push(<>{move.scoreBefore > move.scoreAfter ? <img height={15} src="blunter.png"/> : ''}</>);
+                score.push(<>{move.scoreBefore > move.scoreAfter ? <img height={15} src="img/blunter.png"/> : ''}</>);
             }
         }
 
         if (move.wasOnlyMove && move.playedOnlyMove) {
-            score.push(<img height={15} src="onlymove.png"/>);
+            score.push(<img height={15} src="img/onlymove.png"/>);
+        }
+
+        const winBefore = move.wdlBefore.win;
+        const winAfter = move.wdlAfter.lose;
+        
+        const loseBefore = move.wdlBefore.lose;
+        const loseAfter = move.wdlAfter.win;
+        
+        // score.push(<>{(winBefore - winAfter) / 100} {(loseBefore  -loseAfter) / 100} </>);
+        if (winBefore - winAfter > 250) {
+            score.push(<img height={15} src="img/blunter.png"/>);
+        } else if (winBefore - winAfter > 150) {
+            score.push(<img height={15} src="img/mistake.png"/>);
+        } else if (winBefore - winAfter > 50) {
+            score.push(<img height={15} src="img/misstake.png"/>);
+        }
+
+        if (loseBefore - loseAfter < -200) {
+            score.push(<img height={15} src="img/mistake.png"/>);
+        } else if (loseBefore - loseAfter < -100) {
+            score.push(<img height={15} src="img/misstake.png"/>);
+        } 
+
+        if (loseBefore - loseAfter > 250) {
+            score.push(<img height={15} src="img/great.png"/>);
+        } else if (loseBefore - loseAfter > 150) {
+            score.push(<img height={15} src="img/good.png"/>);
+        } else if (loseBefore - loseAfter > 50) {
+            score.push(<img height={15} src="img/ok.png"/>);
         }
 
         return <>{score}</>;
@@ -76,7 +104,7 @@ export function Moves({ _moves, onMoveClick, orientation }: MovesProps): JSX.Ele
             setMoves(iniMoves);
         }
         
-        const size = 20;
+        const size = 5;
         for (let i=0; i<_moves.length; i+=size) {
             await Promise.all(
                 _moves.slice(i, i + size)

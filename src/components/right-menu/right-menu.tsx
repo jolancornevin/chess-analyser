@@ -43,7 +43,7 @@ export function RightMenu({chess, setFen, setLastMove, orientation, setOrientati
         setFen(chess.fen());
         setMoves(moves);
         
-    }, [chess, setFen, orientation]);
+    }, [chess, setFen]);
 
     // Load a move
     const onMoveClick = useCallback(async (move: Move) => {

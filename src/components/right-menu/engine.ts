@@ -1,7 +1,7 @@
 import { Mutex } from "async-mutex";
 import { Line, NewLine } from "../types";
 
-export const ENGINE_DEPTH = 10;
+export const ENGINE_DEPTH = 15;
 
 interface Engine {
     postMessage(string): void;
@@ -11,12 +11,17 @@ interface Engine {
 
 let engine = null;
 
+declare global {
+    interface Window { stockfish: any; }
+}
+
 export async function getEngine(): Promise<Engine> {
     if (engine) {
         return engine
     }
     
-    engine = eval("stockfish");
+    // engine = eval("stockfish");
+    engine = window.stockfish;
 
     engine.onerror = (event: any) => {
         console.error({event});
@@ -38,14 +43,14 @@ export async function getEngine(): Promise<Engine> {
 const mutex = new Mutex();
 
 export async function engineEval(fen: string, nbLines: number): Promise<Line[]> {
-    console.log("asking muttex")
+    // console.log("asking muttex")
     const release = await mutex.acquire();
-    console.log("got muttex")
+    // console.log("got muttex")
 
     const lines = await _engineEval(fen, nbLines);
 
     release();
-    console.log("released muttex")
+    // console.log("released muttex")
 
     return lines;
 }
@@ -68,6 +73,8 @@ export async function _engineEval(fen: string, nbLines: number): Promise<Line[]>
     
         const engine = await getEngine();
         // set number of lines to eval
+        engine.postMessage(`setoption name Threads value 4`)
+        
         engine.postMessage(`setoption name MultiPV value ${nbLines}`)
         engine.postMessage(`setoption name UCI_ShowWDL value true`)
     
@@ -77,19 +84,23 @@ export async function _engineEval(fen: string, nbLines: number): Promise<Line[]>
         engine.postMessage(`go depth ${ENGINE_DEPTH}`);
         // console.log('-------------');
 
-            
         engine.onmessage = (event: { data: string }) => {
             let message = event.data;
-            console.log(message);
+            // console.log(message);
 
             if (message.startsWith(`info depth ${ENGINE_DEPTH}`)) {
                 // console.log(message);
-                const regx = message.match(`.*score (?<type>cp|mate) (?<score>.*?) (upperbound|nodes).* pv (?<moves>.*)`);
-
-                // console.debug("got line")
+                const regx = message.match(`.*score (?<type>cp|mate) (?<score>.*?) (wdl) (?<win>.*?) (?<draw>.*?) (?<lose>.*?) (upperbound|nodes).* pv (?<moves>.*)`);
                 
                 if (regx && regx.groups !== undefined) {
-                    const line = NewLine(Number(regx?.groups?.score), regx?.groups?.type, regx?.groups?.moves);
+                    const line = NewLine(
+                        Number(regx?.groups?.score),
+                        regx?.groups?.type,
+                        regx?.groups?.moves,
+                        Number(regx?.groups?.win),
+                        Number(regx?.groups?.draw),
+                        Number(regx?.groups?.lose),
+                    );
                     lines.push(line)
 
                     if (isNaN(line.rawScore)) {
@@ -99,7 +110,7 @@ export async function _engineEval(fen: string, nbLines: number): Promise<Line[]>
                     if (lines.length === nbLines) {
                         // console.log("resolving because all lines");
                         engine.postMessage("stop");
-                        engine.postMessage("quit");
+                        // engine.postMessage("quit");
                         
                         lines.sort((a, b) => {
                             // negative value if first < the second argument, zero if ===, and a positive value otherwise.
@@ -108,10 +119,10 @@ export async function _engineEval(fen: string, nbLines: number): Promise<Line[]>
                             // TODO ------> Maybe it has to be evaluated depending on how's playing ???
 
                             if (a.scoreType === "mate" && b.scoreType !== "mate") {
-                                return a.rawScore * 1000
+                                return a.rawScore
                             }
                             if (a.scoreType !== "mate" && b.scoreType === "mate") {
-                                return b.rawScore * 1000
+                                return b.rawScore
                             }
 
                             if (a.rawScore < 0) {
