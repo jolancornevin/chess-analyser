@@ -1,6 +1,9 @@
 import { useCallback, useState } from "react";
 
 import { Chess } from 'chess.js';
+import { DrawShape } from "chessground/draw";
+import * as cg from 'chessground/types';
+
 import { Line, Move, NewMove, resetEngineCache } from "../types";
 import { engineEval } from "./engine";
 import { Lines } from "./lines";
@@ -17,9 +20,11 @@ interface RightMenuProps {
 
     orientation: Color;
     setOrientation: React.Dispatch<React.SetStateAction<Color>>;
+
+    setShape: React.Dispatch<React.SetStateAction<DrawShape>>;
 }
 
-export function RightMenu({chess, setFen, setLastMove, orientation, setOrientation }: RightMenuProps): JSX.Element {
+export function RightMenu({chess, setFen, setLastMove, orientation, setOrientation, setShape }: RightMenuProps): JSX.Element {
     const [moves, setMoves] = useState<Move[]>([]);
     const [lines, setLines] = useState<Line[]>([]);
 
@@ -49,6 +54,7 @@ export function RightMenu({chess, setFen, setLastMove, orientation, setOrientati
     const onMoveClick = useCallback(async (move: Move) => {
         setFen(move.fen);
         setLastMove([move.cmove.from, move.cmove.to]);
+        setShape({ orig: move.bestMove.slice(0, 2) as cg.Key, dest: move.bestMove.slice(2, 4) as cg.Key, brush: "green" });
         
         chess.load(move.fen);
         setLines([]);

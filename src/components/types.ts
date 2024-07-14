@@ -50,6 +50,8 @@ export interface Move {
 
     wasOnlyMove?: boolean;
     playedOnlyMove?: boolean;
+
+    bestMove?: string;
 }
 
 export function NewMove(id: number, value: cMove, moveNumber: number): Move {
@@ -140,6 +142,8 @@ export async function ComputeMoveScore(move: Move): Promise<Move> {
 
                             wasOnlyMove: wasOnlyMove,
                             playedOnlyMove: playedOnlyMove,
+
+                            bestMove: bestLineBefore.line.slice(0, 4)
                         };
 
                         resolve(newMove);
