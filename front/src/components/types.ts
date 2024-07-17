@@ -52,6 +52,7 @@ export interface Move {
     playedOnlyMove?: boolean;
 
     bestMove?: string;
+    bestLine?: Line;
 }
 
 export function NewMove(id: number, value: cMove, moveNumber: number): Move {
@@ -78,7 +79,7 @@ export async function ComputeMoveScore(move: Move): Promise<Move> {
         cache[move.id] = new Promise(async (resolve, reject) => {
             console.log("computing for real for ", move.id)
             await engineEval(move.cmove.color, move.cmove.before, 2, true).then(async (linesBefore) => {
-                await engineEval(move.cmove.color, move.cmove.after, 1, true).then((linesAfter) => {
+                await engineEval(move.cmove.color, move.cmove.after, 2, true).then((linesAfter) => {
                     let accuracy = 0;
                     let scoreDiff = 0;
 
@@ -143,7 +144,8 @@ export async function ComputeMoveScore(move: Move): Promise<Move> {
                             wasOnlyMove: wasOnlyMove,
                             playedOnlyMove: playedOnlyMove,
 
-                            bestMove: bestLineBefore.line.slice(0, 4)
+                            bestMove: bestLineBefore.line.slice(0, 4),
+                            bestLine: bestLineBefore,
                         };
 
                         resolve(newMove);

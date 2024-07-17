@@ -16,7 +16,7 @@ export async function engineEval(color: Color, fen: string, nbLines: number, qui
     const parsedLines = res.map((line): Line => (
         NewLine(
             line.ScoreCP || line.ScoreMate,
-            line.ScoreCP !== 0 ? 'cp' : 'mate',
+            line.ScoreMate !== 0 ? 'mate' : 'cp',
             line.Line,
             line.W, line.D, line.L,
         )

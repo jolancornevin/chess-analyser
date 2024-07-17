@@ -17,6 +17,8 @@ export function ChessUX({ }: ChessUXProps): JSX.Element {
     const [lastMove, setLastMove] = useState([]);
     const [shape, drawArrow] = useState<DrawShape>();
 
+    // TODO find a way to track moves made on the board + engine lines with it.
+
     const chess = useMemo(() => new Chess(), []);
 
     return (
@@ -44,13 +46,11 @@ export function ChessUX({ }: ChessUXProps): JSX.Element {
                         ]: []
                     },
                     events: {
-                        change: () => {console.log("change")},
                         move: (orig: cg.Key, dest: cg.Key, capturedPiece?: cg.Piece) => {
                             // TODO create move variant
-                            console.log("move")
+                            console.log("move");
                         },
                         dropNewPiece: (piece: cg.Piece, key: cg.Key) => {console.log("dropNewPiece")},
-                        select: (key: cg.Key) => {console.log("select")},
                         insert: (elements: cg.Elements) => {console.log("insert")},
                     },
                 }} />
