@@ -106,11 +106,12 @@ export function Moves({ _moves, onMoveClick, orientation }: MovesProps): JSX.Ele
         }
         
         const size = 5;
+
         for (let i=0; i<_moves.length; i+=size) {
             await Promise.all(
                 _moves.slice(i, i + size)
                     // compute only our moves
-                    .filter((move) => (orientation[0] === move.cmove.color))
+                    // .filter((move) => (orientation[0] === move.cmove.color))
                     .map((move) => {
                         return ComputeMoveScore(move).then((scoredMove) => {
                             setMoves((prevMoves) => { return ({ ...prevMoves, [scoredMove.id]: scoredMove }) });

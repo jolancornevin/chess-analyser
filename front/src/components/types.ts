@@ -77,8 +77,8 @@ export async function ComputeMoveScore(move: Move): Promise<Move> {
     if (!cache[move.id]) {
         cache[move.id] = new Promise(async (resolve, reject) => {
             console.log("computing for real for ", move.id)
-            await engineEval(move.cmove.before, 2).then(async (linesBefore) => {
-                await engineEval(move.cmove.after, 1).then((linesAfter) => {
+            await engineEval(move.cmove.color, move.cmove.before, 2, true).then(async (linesBefore) => {
+                await engineEval(move.cmove.color, move.cmove.after, 1, true).then((linesAfter) => {
                     let accuracy = 0;
                     let scoreDiff = 0;
 

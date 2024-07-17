@@ -22,7 +22,10 @@ export function ChessUX({ }: ChessUXProps): JSX.Element {
     return (
         <div style={{ display: 'flex', flexDirection: 'row' }}>
             <div style={{ flex: 2 }}>
-                <Chessground config={{
+                <Chessground
+                    width={800}
+                    height={800}
+                    config={{
                     fen: fen,
                     lastMove: lastMove,
                     orientation: orientation,
@@ -52,7 +55,7 @@ export function ChessUX({ }: ChessUXProps): JSX.Element {
                     },
                 }} />
             </div>
-            <div style={{ marginLeft: 16, width: 500, backgroundColor: "#312e2b", padding: 16 }}>
+            <div style={{ marginLeft: 16, width: 400, backgroundColor: "#312e2b", padding: 16 }}>
                 <RightMenu chess={chess} orientation={orientation} setOrientation={setOrientation} setFen={setFen} setLastMove={setLastMove} drawArrow={drawArrow} />
             </div>
     </div>)

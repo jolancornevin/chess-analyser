@@ -61,7 +61,7 @@ export function RightMenu({chess, setFen, setLastMove, orientation, setOrientati
         chess.load(move.fen);
         setLines([]);
         
-        await engineEval(move.fen, 3).then((lines) => setLines(lines));
+        await engineEval(move.cmove.color, move.fen, 3, false).then((lines) => setLines(lines));
     }, [chess, setFen, setLastMove, drawArrow]);
 
     return (
