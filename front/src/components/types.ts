@@ -1,6 +1,6 @@
 
 import { Move as cMove } from 'chess.js';
-import { engineEval } from './right-menu/engine';
+import { engineEval } from './menu/engine';
 
 
 export interface Line {
