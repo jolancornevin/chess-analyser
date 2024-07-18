@@ -1,94 +1,169 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import Chessground from "@react-chess/chessground";
-import { Chess } from 'chess.js';
+import { Chess, SQUARES } from 'chess.js';
 import { DrawShape } from "chessground/draw";
 import * as cg from 'chessground/types';
 
-import { engineEval } from "./menu/engine";
+import { engineEval, resetEngineCache } from "./menu/engine";
 import { Lines } from "./menu/lines";
 import { Moves } from "./menu/moves";
-import { ComputeMoveScore, Line, Move, NewMove, resetEngineCache } from "./types";
+import { ComputeMoveScore, Line, Move, NewMove, Node, resetMoveIDs } from "./types";
 
 declare const colors: readonly ["white", "black"];
 declare type Color = typeof colors[number];
 
-
-interface ChessUXProps {}
-export function ChessUX({ }: ChessUXProps): JSX.Element {
+export function ChessUX(): JSX.Element {
     const chess = useMemo(() => new Chess(), []);
 
+    // INPUTS
     const [orientation, setOrientation] = useState<Color>("white");
     const [fen, setFen] = useState('');
+
+    // Chess UX
     const [lastMove, setLastMove] = useState([]);
     const [shape, drawArrow] = useState<DrawShape>();
+    const [allowedDest, setAllowedDest] = useState<Map<cg.Key, cg.Key[]>>(new Map());
 
-    const [moves, setMoves] = useState<Record<number, Move>>({});
+    // Moves and computation
+    const [moves, setMoves] = useState<Record<number, Node<Move>>>({});
     const [lines, setLines] = useState<Line[]>([]);
     const [computeTime, setComputeTime] = useState(0);
 
     // TODO hotkey left and right to move from move to move
-    const [currentMove, setCurrentMove] = useState(0);
+    const [currentMoveID, setCurrentMoveID] = useState(0);
+
+    let nbOfGameMoves = useRef(-1);
 
     // Load a game
     const onPGNChange = useCallback(async (pgn: string) => {
         chess.loadPgn(pgn);
+        
+        const moves: Record<number, Node<Move>> = {};
+        let index = 0;
+        let lastMoveID = -1;
+
+        // just to start from 0 again.
+        resetMoveIDs();
         resetEngineCache();
 
-        const moves: Move[] = [];
-        let index = 0;
-
-        // start computing every move.
+        // start listing every move.
         for (const value of chess.history({ verbose: true })) {
-            let _index = index;
+            const move = NewMove(value, Math.floor(index / 2) + 1);
+            const node = new Node(move);
+            
+            moves[move.id] = node;
+            lastMoveID = move.id;
 
-            moves.push(NewMove(_index, value, Math.floor(_index / 2) + 1));
+            // on init, all ids will follow each others
+            if (index > 0) {
+                moves[move.id - 1].next = node;
+            }
+
+            nbOfGameMoves.current = move.id;
 
             index += 1;
         }
 
         setFen(chess.fen());
+        
         setMoves(moves);
+        setCurrentMoveID(lastMoveID);
 
+        const movesAsArray = Object.values(moves);
 
+        // start processing the move with the engine
+        const batchSize = 5;
         const startTime = performance.now()
 
-        const size = 5;
-
-        for (let i=0; i<moves.length; i+=size) {
+        for (let i=0; i<movesAsArray.length; i+=batchSize) {
             await Promise.all(
-                moves.slice(i, i + size)
+                movesAsArray.slice(i, i + batchSize)
                     // compute only our moves
                     // .filter((move) => (orientation[0] === move.cmove.color))
                     .map((move) => {
                         return ComputeMoveScore(move).then((scoredMove) => {
-                            setMoves((prevMoves) => { return ({ ...prevMoves, [scoredMove.id]: scoredMove }) });
+                            setMoves((prevMoves) => { return ({ ...prevMoves, [scoredMove.data.id]: scoredMove }) });
                         });
                     })
             );
         }
 
         setComputeTime(Math.round((performance.now() - startTime) / 1000));
-
     }, [chess, setFen]);
 
     // Load a move
     const onMoveClick = useCallback(async (move: Move) => {
-        setCurrentMove(move.id);
+        console.log(move);
 
+        // Update states
+        setCurrentMoveID(move.id);
+        chess.load(move.fen);
         setFen(move.fen);
+
+        // UX
         setLastMove([move.cmove.from, move.cmove.to]);
         if (move.bestMove) {
             drawArrow({ orig: move.bestMove.slice(0, 2) as cg.Key, dest: move.bestMove.slice(2, 4) as cg.Key, brush: "green" });
         }
 
-        chess.load(move.fen);
+        // Engines
         setLines([]);
 
-        await engineEval(move.cmove.color, move.fen, 3, false).then((lines) => setLines(lines));
+    const nextColor = move.cmove.color === 'w'? 'b': 'w';
+        await engineEval(nextColor, move.fen, 3, false).then((lines) => setLines(lines));
     }, [chess, setFen, setLastMove, drawArrow]);
 
-    console.log({currentMove: moves[currentMove]})
+    const onBoardMove = useCallback(async (from: cg.Key, to: cg.Key, capturedPiece?: cg.Piece) => {
+        const cMove = chess.move({ from, to });
+
+        const move = NewMove(cMove, moves[currentMoveID].data.number);
+        let node = new Node(move);
+
+        if (moves[currentMoveID].next === undefined && currentMoveID !== nbOfGameMoves.current) {
+            moves[currentMoveID].next = node
+        } else {
+            // if the next move is the same as the next move, re-use it
+            if (moves[currentMoveID].next?.data.to === node.data.to) {
+                node = moves[currentMoveID].next
+            } else {
+                const nodeAlreadyInHistory = moves[currentMoveID].alternates.find((x) => { return x.data.to === node.data.to });
+                // check if the move didn't get made before, to re-use it also
+                if (!nodeAlreadyInHistory) {
+                    moves[currentMoveID].addAlternates(node);
+                } else {
+                    node = nodeAlreadyInHistory;
+                }
+            }
+
+        }
+
+        ComputeMoveScore(node).then((scoredMove) => {
+            setMoves((prevMoves) => {
+                return ({ ...prevMoves, [scoredMove.data.id]: scoredMove });
+            });
+        });
+
+        setMoves((prevMoves) => {
+            return ({ ...prevMoves, [node.data.id]: node });
+        });
+
+        onMoveClick(node.data);
+    }, [moves, currentMoveID, chess, nbOfGameMoves, onMoveClick]);
+
+    useEffect(function computeValidMoves() {
+        const dests = new Map();
+        
+        // loop through all squares and find legal moves.
+        SQUARES.forEach(s => {
+          const ms = chess.moves({square: s, verbose: true});
+            if (ms.length) {
+                dests.set(s, ms.map(m => m.to));
+            }
+        });
+
+        setAllowedDest(dests);
+    }, [chess, currentMoveID]);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'row' }}>
@@ -114,11 +189,12 @@ export function ChessUX({ }: ChessUXProps): JSX.Element {
                             shape,
                         ]: []
                     },
+                    movable: {
+                        free: false,
+                        dests: allowedDest
+                    },
                     events: {
-                        move: (orig: cg.Key, dest: cg.Key, capturedPiece?: cg.Piece) => {
-                            // TODO create move variant
-                            console.log("move");
-                        },
+                        move: onBoardMove,
                         dropNewPiece: (piece: cg.Piece, key: cg.Key) => {console.log("dropNewPiece")},
                         insert: (elements: cg.Elements) => {console.log("insert")},
                     },
@@ -135,9 +211,11 @@ export function ChessUX({ }: ChessUXProps): JSX.Element {
                     <div style={{ marginTop: 8, height: 700 }}>
                         Analysed in: {computeTime}s
 
-                        <Lines linesForNewPos={lines} expectedLine={moves[currentMove]?.bestLine} />
+                        <Lines linesForNewPos={lines} expectedLine={moves[currentMoveID]?.data?.bestLine} />
 
-                        <Moves moves={moves} onMoveClick={onMoveClick} orientation={orientation} currentMove={currentMove} />
+                        <div style={{overflowY: "auto", marginTop: 8, height: 500, border: "1px solid white"}}>
+                            {moves[0] !== undefined && <Moves firstMove={moves[0]} onMoveClick={onMoveClick} orientation={orientation} currentMoveID={currentMoveID} />}
+                        </div>
                     </div>
                 </div>
             </div>

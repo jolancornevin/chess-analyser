@@ -1,19 +1,19 @@
 import { useCallback } from "react";
-import { Move } from "../types";
+import { Move, Node } from "../types";
 
 interface MoveProps {
     move: Move;
 
     onClick: () => Promise<void>
 
-    currentMove: number;
+    currentMoveID: number;
 
     orientation: string;
+
+    asLine?: boolean;
 }
 
-function MoveUX({ move, onClick, currentMove, orientation }: MoveProps): JSX.Element {    
-    // const [move, setMove] = useState(_move);
-    
+function MoveUX({ move, onClick, currentMoveID, orientation, asLine }: MoveProps): JSX.Element {    
     const noteMove = useCallback((move: Move): JSX.Element => {
         if (!move.scoreComputed) {
 
@@ -73,7 +73,7 @@ function MoveUX({ move, onClick, currentMove, orientation }: MoveProps): JSX.Ele
     }, [orientation])
 
     return (
-        <div style={{ width: "50%", cursor: "pointer", textAlign: "left", backgroundColor: move.id === currentMove? "#8b8987": "" }} onClick={onClick}>
+        <div style={{ cursor: "pointer", textAlign: "left", backgroundColor: move.id === currentMoveID? "#8b8987": "" }} onClick={onClick}>
             {move.number}. {move.to}: {noteMove(move)} 
         </div>
     );
@@ -81,16 +81,26 @@ function MoveUX({ move, onClick, currentMove, orientation }: MoveProps): JSX.Ele
 
 
 interface MovesProps {
-    moves: Record<number, Move>;
+    firstMove: Node<Move>;
     onMoveClick: (move: Move) => Promise<void>
     orientation: string;
 
-    currentMove: number;
+    currentMoveID: number;
+
+    asLine?: boolean;
 }
 
-export function Moves({ moves, onMoveClick, orientation, currentMove }: MovesProps): JSX.Element {    
+export function Moves({ firstMove, onMoveClick, orientation, currentMoveID, asLine }: MovesProps): JSX.Element {
+    let move = firstMove;
+    const moves = [move];
+
+    while (move.next) {
+        moves.push(move.next);
+        move = move.next
+    }
+
     return (
-            <div style={{ overflowY: "auto", height: 500, marginTop: 8, border: "1px solid white",  }}>
+            <div style={{   }}>
                 <div style={{
                     flex: 1,
                     display: "flex",
@@ -100,15 +110,30 @@ export function Moves({ moves, onMoveClick, orientation, currentMove }: MovesPro
                 }}>
                     {Object.values(moves).map((move, i): JSX.Element => {
                         return (
-                            <MoveUX
-                                key={move.id}
-                                move={move}
-                                currentMove={currentMove}
-                                orientation={orientation}
-                                onClick={async () => {
-                                    await onMoveClick(move)
-                                }}
-                            />
+                            <>
+                                <div style={{width: asLine? "64px": "50%"}}>
+                                    <MoveUX
+                                        key={move.data.id}
+                                        move={move.data}
+                                        currentMoveID={currentMoveID}
+                                        orientation={orientation}
+                                        onClick={async () => {
+                                            await onMoveClick(move.data)
+                                        }}
+                                        asLine={asLine}
+                                    />
+                                </div>
+
+                                {move.alternates.length > 0 && <div style={{ width: "100%" }}>
+                                    {move.alternates.map((alternateMove) => {
+                                        return (
+                                            <div style={{ marginLeft: 8 }}>
+                                                <Moves firstMove={alternateMove} onMoveClick={onMoveClick} orientation={orientation} currentMoveID={currentMoveID} asLine={true} />
+                                            </div>
+                                        )
+                                    })}
+                                </div>}
+                            </>
                         );
                     })}
                 </div>

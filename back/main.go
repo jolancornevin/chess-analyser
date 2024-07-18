@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	QUICK_ENGINE_DEPTH = 12
-	ENGINE_DEPTH       = 20
+	QUICK_ENGINE_DEPTH = 10
+	ENGINE_DEPTH       = 15
 )
 
 type StringMove struct {
@@ -45,7 +45,7 @@ type Line struct {
 
 var cache = map[string][]Line{}
 
-func computeLines(color, fenPosition, nbLines string, quick bool) []Line {
+func computeLines(fenPosition, nbLines string, quick bool) []Line {
 	if lines, ok := cache[fenPosition]; ok {
 		fmt.Println("cached")
 		return lines
@@ -83,12 +83,9 @@ func computeLines(color, fenPosition, nbLines string, quick bool) []Line {
 	res := lo.Map(
 		eng.SearchResults().MultiPV,
 		func(info uci.Info, _ int) Line {
-			// for some reason, stockfish returns a positive score if the color to move has an advantage and a negative score else
-			// We want to standardize the score with negative = advantage black and positive = advantage white.
-			// We do this by looking at the color playing (for the engine).
 			return Line{
-				ScoreCP:   info.Score.CP * lo.Ternary(color == "w", 1, -1),
-				ScoreMate: info.Score.Mate * lo.Ternary(color == "w", 1, -1),
+				ScoreCP:   info.Score.CP,
+				ScoreMate: info.Score.Mate,
 				Line:      strings.Join(lo.Map(info.PV, func(move *chess.Move, _ int) string { return move.String() }), " "),
 
 				W: info.WDL[0],
@@ -114,7 +111,20 @@ func handleComputeLines(w http.ResponseWriter, r *http.Request) {
 
 	// moves := eng.SearchResults().BestMove
 
-	res := computeLines(color, fenPosition, nbLines, quick == "true")
+	res := computeLines(fenPosition, nbLines, quick == "true")
+
+	res = lo.Map(
+		res,
+		func(line Line, _ int) Line {
+			// for some reason, stockfish returns a positive score if the color to move has an advantage and a negative score else
+			// We want to standardize the score with negative = advantage black and positive = advantage white.
+			// We do this by looking at the color playing (for the engine).
+			line.ScoreCP = line.ScoreCP * lo.Ternary(color == "w", 1, -1)
+			line.ScoreMate = line.ScoreMate * lo.Ternary(color == "w", 1, -1)
+
+			return line
+		},
+	)
 
 	response, err := json.Marshal(res)
 	if err != nil {

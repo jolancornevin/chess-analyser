@@ -9,7 +9,7 @@ interface LinesProps {
 const LINE_HEIGHT = 60;
 
 export function Lines({ linesForNewPos, expectedLine }: LinesProps): JSX.Element {
-    console.log({expectedLine})
+
     return (
         <>
             <div style={{ flex: 1, marginTop: 8, height: LINE_HEIGHT, border: "1px solid white", }}>
