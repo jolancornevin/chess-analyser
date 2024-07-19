@@ -50,12 +50,12 @@ export interface Move {
     id: number;
 
     number: number;
+    cmove: cMove;
     to: string; // move (d4)
     fen: string;
 
     scoreComputed: boolean;
 
-    cmove?: cMove;
     scoreDiff?: number;
     accuracy?: number;
 
@@ -127,7 +127,10 @@ export async function ComputeMoveScore(node: Node<Move>): Promise<Node<Move>> {
                         // engine found more than one line
                         linesBefore.length >= 2
                         // the diff between the first line and seconde is high
-                        && linesBefore[0].rawScore > linesBefore[1].rawScore + 200
+                        && (
+                            (currentColor === 'w' && linesBefore[0].rawScore - linesBefore[1].rawScore > 200)
+                            || (currentColor === 'b' && (linesBefore[0].rawScore * -1) - (linesBefore[1].rawScore * -1) > 200)
+                        )
                     );
 
                     let playedOnlyMove = (
@@ -154,8 +157,9 @@ export async function ComputeMoveScore(node: Node<Move>): Promise<Node<Move>> {
                             draw: bestLineBefore.draw,
                         },
                         wdlAfter: {
-                            win: bestLineAfter.win,
-                            lose: bestLineAfter.lose,
+                            // invert win and lose on purpose to adapt to wdl relative to move
+                            win: bestLineAfter.lose,
+                            lose: bestLineAfter.win,
                             draw: bestLineAfter.draw,
                         },
 

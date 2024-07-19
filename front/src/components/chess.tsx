@@ -153,7 +153,7 @@ export function ChessUX(): JSX.Element {
 
     useEffect(function computeValidMoves() {
         const dests = new Map();
-        
+
         // loop through all squares and find legal moves.
         SQUARES.forEach(s => {
           const ms = chess.moves({square: s, verbose: true});
@@ -200,8 +200,7 @@ export function ChessUX(): JSX.Element {
                     },
                 }} />
             </div>
-            <div style={{ marginLeft: 16, width: 400, backgroundColor: "#312e2b", padding: 16 }}>
-                
+            <div style={{ marginLeft: 16, width: 400, paddingLeft: 16 }}>
                 <div>
                     <div style={{ flex: 1, border: "1px solid white" }}>
                         {/* Fen: <input value={fen} onChange={e => setFen(e.target.value)} /> */}
@@ -209,7 +208,9 @@ export function ChessUX(): JSX.Element {
                         Playing as {orientation}: <input type="checkbox" checked={orientation === "white"} onChange={e => {setOrientation(e.target.checked ? "white": "black")}} />
                     </div>
                     <div style={{ marginTop: 8, height: 700 }}>
-                        Analysed in: {computeTime}s
+                        <div>
+                            Analysed in: {computeTime}s
+                        </div>
 
                         <Lines linesForNewPos={lines} expectedLine={moves[currentMoveID]?.data?.bestLine} />
 
