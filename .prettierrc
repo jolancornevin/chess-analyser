@@ -8,10 +8,8 @@
     "^react$",
     "<THIRD_PARTY_MODULES>",
     "@mui",
-    "@work4Labs",
-    "^@[api|components|constants|lib|pages|public|styledcomponents|typings|utils|locales](.*)$",
+    
     "^@(.*)$",
-    "^(.*)/types$",
     "^[./]"
   ],
   "importOrderSeparation": true,

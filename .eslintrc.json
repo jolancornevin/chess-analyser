@@ -1,0 +1,79 @@
+{
+  "root": true,
+  "env": {
+    "browser": true,
+    "es6": true,
+    "node": true
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    },
+    "import/parsers": {
+      "@typescript-eslint/parser": [".ts", ".tsx"]
+    }
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "./tsconfig.json",
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "ecmaVersion": 12,
+    "sourceType": "module"
+  },
+
+  "plugins": ["@typescript-eslint", "@next/eslint-plugin-next", "unused-imports"],
+
+  "extends": [
+    "eslint:recommended",
+    "next",
+    "next/core-web-vitals",
+    "prettier",
+    "plugin:react/recommended",
+    "plugin:import/recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-requiring-type-checking",
+    "plugin:@next/next/recommended",
+    "plugin:import/typescript",
+    "plugin:@tanstack/eslint-plugin-query/recommended"
+  ],
+
+  "rules": {
+    "no-mixed-operators": "error",
+    "prefer-const": "error",
+    "react/prop-types": "off",
+    "react/no-children-prop": "off",
+    "react/display-name": "off",
+    "react/jsx-key": "warn",
+    "@typescript-eslint/no-unsafe-assignment": "off",
+    "@typescript-eslint/no-unsafe-member-access": "off",
+    "@typescript-eslint/no-unsafe-call": "off",
+    "@typescript-eslint/no-var-requires": "off",
+    "@typescript-eslint/no-unsafe-return": "off",
+    "@typescript-eslint/unbound-method": "off",
+    "@typescript-eslint/no-empty-function": "off",
+    "@typescript-eslint/no-floating-promises": "off",
+    "@typescript-eslint/no-unsafe-enum-comparison": "off",
+    "@typescript-eslint/no-misused-promises": "warn",
+    "@typescript-eslint/no-explicit-any": "off",
+    "import/no-named-as-default-member": "off",
+    "no-debugger": "off",
+    "no-console": "warn",
+    "@typescript-eslint/no-unused-vars": "error",
+    "promise/always-return": "off",
+    "import/no-unresolved": "error",
+    "unused-imports/no-unused-imports": "error",
+    "unused-imports/no-unused-vars": [
+      "warn",
+      {
+        "vars": "all",
+        "varsIgnorePattern": "^_",
+        "args": "after-used",
+        "argsIgnorePattern": "^_"
+      }
+    ],
+    // suppress errors for missing 'import React' in files, because we are using nextJs, which does it for us.
+    "react/react-in-jsx-scope": "off"
+  }
+}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/jolancornevin/stockfish_http/uci"
 	"github.com/notnil/chess"
+	"github.com/notnil/chess/opening"
 	"github.com/samber/lo"
 
 	"github.com/rs/cors"
@@ -135,9 +136,58 @@ func handleComputeLines(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
+var bookECO *opening.BookECO
+
+func handlGetOpening(w http.ResponseWriter, r *http.Request) {
+	// ctx := r.Context()
+	moves := r.URL.Query().Get("moves")
+
+	g := chess.NewGame()
+	for _, move := range strings.Split(moves, ",") {
+		g.MoveStr(move)
+	}
+
+	openings := bookECO.Possible(g.Moves())
+
+	for _, o := range openings {
+		if o != nil {
+			fmt.Printf("%+v\n", o)
+		}
+	}
+
+	mostPreciseOpening, _ := lo.Last(openings)
+
+	if mostPreciseOpening == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{}`))
+	}
+
+	response, err := json.Marshal(struct {
+		Code  string `json:"code"`
+		Title string `json:"title"`
+		Pgn   string `json:"pgn"`
+		// Game  *chess.Game
+	}{
+		Code:  mostPreciseOpening.Code(),
+		Title: mostPreciseOpening.Title(),
+		Pgn:   mostPreciseOpening.PGN(),
+		// Game:  o.Game(),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(response)
+}
+
 func main() {
+	// init here because it's long and we don't want to do it every time we call the endpoint
+	bookECO = opening.NewBookECO()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleComputeLines)
+	mux.HandleFunc("/opening", handlGetOpening)
 
 	handler := cors.Default().Handler(mux)
 
