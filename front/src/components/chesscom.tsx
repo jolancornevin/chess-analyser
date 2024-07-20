@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { ChessComGame } from "./types";
+import { ChessComGame } from "../types";
 
 interface ChessComGamesProps {
     playerID: string;

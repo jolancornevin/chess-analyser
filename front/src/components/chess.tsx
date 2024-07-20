@@ -6,11 +6,11 @@ import * as cg from "chessground/types";
 
 import Chessground from "@react-chess/chessground";
 
+import { ChessComGame, ComputeMoveScore, Line, Move, NewMove, Node, resetMoveIDs } from "../types";
 import { ChessComGames } from "./chesscom";
 import { engineEval, resetEngineCache } from "./engine";
 import { Lines } from "./lines";
 import { Moves } from "./moves";
-import { ChessComGame, ComputeMoveScore, Line, Move, NewMove, Node, resetMoveIDs } from "./types";
 
 declare const colors: readonly ["white", "black"];
 declare type Color = (typeof colors)[number];

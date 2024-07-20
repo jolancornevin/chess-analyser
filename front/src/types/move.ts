@@ -1,51 +1,8 @@
 import { Move as cMove } from "chess.js";
 
-import { engineEval } from "./engine";
-
-export class Node<T> {
-    data: T;
-
-    next?: Node<T>;
-    alternates: Node<T>[];
-
-    constructor(data: T) {
-        this.data = data;
-        this.alternates = [];
-    }
-
-    addAlternates(node: Node<T>): void {
-        this.alternates.push(node);
-    }
-}
-
-export interface Line {
-    line: string;
-
-    scoreType: string;
-
-    rawScore: number;
-    score: string;
-
-    win: number;
-    draw: number;
-    lose: number;
-}
-
-export function NewLine(rawScore, scoreType, line, win, draw, lose): Line {
-    const isMate = scoreType === "mate";
-    const score = isMate ? rawScore : rawScore / 100;
-
-    return {
-        score: `${isMate ? "M" : ""}${score}`, // in pawns
-        rawScore: isMate ? rawScore * 1000 : rawScore, // in centipawns
-        scoreType,
-        line,
-
-        win,
-        draw,
-        lose,
-    };
-}
+import { engineEval } from "../components/engine";
+import { Line } from "./line";
+import { Node } from "./node";
 
 export interface Move {
     id: number;
@@ -189,41 +146,4 @@ export async function ComputeMoveScore(node: Node<Move>): Promise<Node<Move>> {
             });
         });
     });
-}
-
-// Chess.com API
-
-export interface ChessComePlayer {
-    uuid: string;
-    "@id": string;
-    username: string;
-
-    rating: number;
-    result: string; // checkmated, win, timeout
-}
-
-export interface ChessComGame {
-    uuid: string;
-
-    fen: string;
-    pgn: string;
-    tcn: string;
-
-    initial_setup: string;
-
-    rated: boolean;
-    rules: string; // chess
-
-    end_time: number;
-    time_class: string;
-    time_control: string;
-    url: string;
-
-    accuracies?: {
-        black: number;
-        white: number;
-    };
-
-    white: ChessComePlayer;
-    black: ChessComePlayer;
 }
