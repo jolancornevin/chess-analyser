@@ -1,4 +1,4 @@
-import { Line } from "../types";
+import { Line } from "./types";
 
 interface LinesProps {
   expectedLine?: Line;

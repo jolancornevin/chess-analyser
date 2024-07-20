@@ -1,6 +1,6 @@
 import { Color } from "chess.js";
 
-import { Line, NewLine } from "../types";
+import { Line, NewLine } from "./types";
 
 let cache = {};
 

@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
 
-import { Move, Node } from "../types";
+import { Move, Node } from "./types";
 
 const BLACK_CELL_COLOR = "";
 const WHITE_CELL_COLOR = "#c3d7ff30";

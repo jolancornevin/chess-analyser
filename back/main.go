@@ -78,7 +78,11 @@ func computeLines(fenPosition, nbLines string, quick bool) []Line {
 		StringMove{Move: fmt.Sprintf("position fen %v", fenPosition)},
 		uci.CmdGo{Depth: lo.Ternary(quick, QUICK_ENGINE_DEPTH, ENGINE_DEPTH)},
 	); err != nil {
-		panic(err)
+		// although rare, it can happen that the engine is not capable of parsing
+		// a position (for immediates mates for instance).
+		// Let just return nothing.
+		fmt.Printf(">>> ERROR: %v", err.Error())
+		return []Line{}
 	}
 
 	res := lo.Map(
