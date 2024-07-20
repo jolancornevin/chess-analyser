@@ -20,6 +20,7 @@ export function ChessComGames({ playerID, onSelectGame }: ChessComGamesProps): J
 
         let month = date.getUTCMonth() + 1;
 
+        // API: https://www.chess.com/news/view/published-data-api#pubapi-endpoint-games
         const gamesP = fetch(
             `https://api.chess.com/pub/player/${playerID}/games/${date.getFullYear()}/${(month < 9 ? "0" : "") + month}`,
         );
@@ -39,8 +40,6 @@ export function ChessComGames({ playerID, onSelectGame }: ChessComGamesProps): J
             <div style={{ overflowY: "auto", height: 700 }}>
                 {games?.map((game: ChessComGame, i) => {
                     // const game = _game;
-
-                    console.log({ i, selectedGame });
 
                     const isWhite = game.white.username === playerID;
                     const playerResult = isWhite ? game.white.result : game.black.result;

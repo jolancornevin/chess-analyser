@@ -16,6 +16,10 @@ declare const colors: readonly ["white", "black"];
 declare type Color = (typeof colors)[number];
 
 const playerID = "jolan160";
+const captureSound = new Audio("./sounds/capture.mp3");
+const moveSound = new Audio("./sounds/move-self.mp3");
+const promotionSound = new Audio("./sounds/promote.mp3");
+const castleSound = new Audio("./sounds/castle.mp3");
 
 export function ChessUX(): JSX.Element {
     const chess = useMemo(() => new Chess(), []);
@@ -131,7 +135,17 @@ export function ChessUX(): JSX.Element {
     // Load a move
     const onMoveClick = useCallback(
         async (move: Move) => {
-            console.log(move);
+            console.log({ move });
+            // TODO add check
+            if (move.cmove.captured) {
+                captureSound.play();
+            } else if (move.cmove.lan === "O-O" || move.cmove.lan === "O-O-O") {
+                castleSound.play();
+            } else if (move.cmove.promotion) {
+                promotionSound.play();
+            } else {
+                moveSound.play();
+            }
 
             // Update states
             setCurrentMoveID(move.id);
@@ -240,42 +254,42 @@ export function ChessUX(): JSX.Element {
                         ? currentGame?.black.username
                         : currentGame?.white.username}
                 </div>
-                <div>
-                    <Chessground
-                        width={800}
-                        height={800}
-                        config={{
-                            fen: fen,
-                            lastMove: lastMove,
-                            orientation: orientation,
-                            autoCastle: true,
-                            highlight: {
-                                lastMove: true,
-                                check: true,
+
+                <Chessground
+                    width={800}
+                    height={800}
+                    config={{
+                        fen: fen,
+                        lastMove: lastMove,
+                        orientation: orientation,
+                        autoCastle: true,
+                        highlight: {
+                            lastMove: true,
+                            check: true,
+                        },
+                        animation: {
+                            enabled: true,
+                        },
+                        drawable: {
+                            enabled: true,
+                            autoShapes: shape ? [shape] : [],
+                        },
+                        movable: {
+                            free: false,
+                            dests: allowedDest,
+                        },
+                        events: {
+                            move: onBoardMove,
+                            dropNewPiece: (piece: cg.Piece, key: cg.Key) => {
+                                console.log("dropNewPiece");
                             },
-                            animation: {
-                                enabled: true,
+                            insert: (elements: cg.Elements) => {
+                                console.log("insert");
                             },
-                            drawable: {
-                                enabled: true,
-                                autoShapes: shape ? [shape] : [],
-                            },
-                            movable: {
-                                free: false,
-                                dests: allowedDest,
-                            },
-                            events: {
-                                move: onBoardMove,
-                                dropNewPiece: (piece: cg.Piece, key: cg.Key) => {
-                                    console.log("dropNewPiece");
-                                },
-                                insert: (elements: cg.Elements) => {
-                                    console.log("insert");
-                                },
-                            },
-                        }}
-                    />
-                </div>
+                        },
+                    }}
+                />
+
                 <div>
                     {currentGame?.white.username === playerID
                         ? currentGame?.white.username
