@@ -7,3 +7,5 @@ I've simply added the HTTP server part + made a few fixes to work with the front
 The goal of this is to release some load from the front + be able to // the analysis queries.
 
 It will also be easier to scale for faster analysis
+
+Uses https://github.com/nutsdb/nutsdb/blob/master/docs/user_guides/use-kv-pair.md for caching
