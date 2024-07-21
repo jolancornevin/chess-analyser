@@ -16,7 +16,7 @@ export interface ChessComGame {
     pgn: string;
     tcn: string;
 
-    initial_setup: string;
+    initial_setup: string; // probably useless
 
     rated: boolean;
     rules: string; // chess

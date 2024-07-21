@@ -26,22 +26,25 @@ function MoveUX({ move, onClick, currentMoveID, orientation }: MoveProps): JSX.E
         if (move.scoreDiff < 60) {
         } else if (move.scoreDiff < 80) {
             score.push(
-                <>{move.scoreBefore > move.scoreAfter && <img height={15} src="img/mistake.png" alt="mistake" />}.</>,
+                <>[{move.scoreBefore > move.scoreAfter && <img height={15} src="img/mistake.png" alt="mistake" />}]</>,
             );
         } else if (move.scoreDiff < 150) {
             score.push(
-                <>{move.scoreBefore > move.scoreAfter && <img height={15} src="img/misstake.png" alt="misstake" />}.</>,
+                <>
+                    [{move.scoreBefore > move.scoreAfter && <img height={15} src="img/misstake.png" alt="misstake" />}]
+                </>,
             );
         } else {
             if (move.wasOnlyMove && !move.playedOnlyMove) {
                 score.push(
-                    <>{move.scoreBefore > move.scoreAfter && <img height={15} src="img/miss.png" alt="miss" />}.</>,
+                    <>{move.scoreBefore > move.scoreAfter && <img height={15} src="img/miss.png" alt="miss" />}</>,
                 );
             } else {
                 // TODO blunter only if we love a piece or it's mate
                 score.push(
                     <>
-                        {move.scoreBefore > move.scoreAfter && <img height={15} src="img/blunter.png" alt="blunter" />}.
+                        [{move.scoreBefore > move.scoreAfter && <img height={15} src="img/blunter.png" alt="blunter" />}
+                        ]
                     </>,
                 );
             }
@@ -91,7 +94,7 @@ function MoveUX({ move, onClick, currentMoveID, orientation }: MoveProps): JSX.E
             style={{
                 cursor: "pointer",
                 textAlign: "left",
-                backgroundColor: move.id === currentMoveID ? "#8b8987" : "",
+                backgroundColor: move.id === currentMoveID ? "#3c63b2ba" : "",
             }}
             onClick={onClick}
         >

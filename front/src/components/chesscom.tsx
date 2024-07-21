@@ -35,7 +35,9 @@ export function ChessComGames({ playerID, onSelectGame }: ChessComGamesProps): J
                 Manual set: PGN: <textarea onChange={async (e) => await onPGNChange(e.target.value)} />
             </div> */}
 
-            <div>Games for {playerID}:</div>
+            <div>
+                Games for <b>{playerID}</b>:
+            </div>
 
             <div style={{ overflowY: "auto", height: 700 }}>
                 {games?.map((game: ChessComGame, i) => {

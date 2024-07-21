@@ -48,20 +48,27 @@ export function ChessUX(): JSX.Element {
     const onPGNChange = useCallback(
         async (pgn: string) => {
             chess.loadPgn(pgn);
+            const comments = chess.getComments();
+
+            // just to start from 0 again.
+            resetMoveIDs();
+            resetEngineCache();
 
             const moves: Record<number, Node<Move>> = {};
             let index = 0;
             let lastMoveID = -1;
 
             let movesAsString = [];
-
-            // just to start from 0 again.
-            resetMoveIDs();
-            resetEngineCache();
-
             // start listing every move.
             for (const value of chess.history({ verbose: true })) {
-                const move = NewMove(value, Math.floor(index / 2) + 1);
+                let timeComment = "";
+                // extract the time info from the comment
+                const matchs = comments[index].comment.match("%clk (.*)]");
+                if (matchs.length === 2) {
+                    timeComment = matchs[1];
+                }
+
+                const move = NewMove(value, Math.floor(index / 2) + 1, timeComment);
                 const node = new Node(move);
 
                 moves[move.id] = node;
@@ -97,7 +104,7 @@ export function ChessUX(): JSX.Element {
             const movesAsArray = Object.values(moves);
 
             // start processing the move with the engine
-            const batchSize = 5;
+            const batchSize = 10;
             const startTime = performance.now();
 
             for (let i = 0; i < movesAsArray.length; i += batchSize) {
@@ -135,7 +142,8 @@ export function ChessUX(): JSX.Element {
     // Load a move
     const onMoveClick = useCallback(
         async (move: Move) => {
-            console.log({ move });
+            console.log(move);
+
             // TODO add check
             if (move.cmove.captured) {
                 captureSound.play();
@@ -166,7 +174,7 @@ export function ChessUX(): JSX.Element {
             setLines([]);
 
             const nextColor = move.cmove.color === "w" ? "b" : "w";
-            await engineEval(nextColor, move.fen, 3, false).then((lines) => setLines(lines));
+            await engineEval(nextColor, move.fen, 2, true).then((lines) => setLines(lines));
         },
         [chess, setFen, setLastMove, drawArrow],
     );
@@ -175,7 +183,7 @@ export function ChessUX(): JSX.Element {
         async (from: cg.Key, to: cg.Key, capturedPiece?: cg.Piece) => {
             const cMove = chess.move({ from, to });
 
-            const move = NewMove(cMove, moves[currentMoveID].data.number);
+            const move = NewMove(cMove, moves[currentMoveID].data.number, "");
             let node = new Node(move);
 
             // special case for when we're manually adding moves after the last move
@@ -215,6 +223,7 @@ export function ChessUX(): JSX.Element {
         [moves, currentMoveID, chess, nbOfGameMoves, onMoveClick],
     );
 
+    // compute valid moves to tell chessground which move we can do.
     useEffect(
         function computeValidMoves() {
             const dests = new Map();
@@ -238,21 +247,20 @@ export function ChessUX(): JSX.Element {
     return (
         <div style={{ display: "flex", flexDirection: "row", alignSelf: "flex-start", paddingLeft: 32 }}>
             <div style={{ width: 300, flex: 1 }}>
-                Playing as {orientation}:{" "}
-                <input
-                    type="checkbox"
-                    checked={orientation === "white"}
-                    onChange={(e) => {
-                        setOrientation(e.target.checked ? "white" : "black");
-                    }}
-                />
                 <ChessComGames playerID={playerID} onSelectGame={onSelectGame} />
             </div>
             <div style={{ flex: 1 }}>
-                <div>
-                    {currentGame?.white.username === playerID
-                        ? currentGame?.black.username
-                        : currentGame?.white.username}
+                <div style={{ lineHeight: "1.5rem" }}>
+                    <b>
+                        {currentGame?.white.username === playerID
+                            ? currentGame?.black.username
+                            : currentGame?.white.username}
+                    </b>
+                    <span
+                        style={{ backgroundColor: "white", color: "black", borderRadius: 4, marginLeft: 8, padding: 4 }}
+                    >
+                        {moves[currentMoveID]?.data?.comment}
+                    </span>
                 </div>
 
                 <Chessground
@@ -290,10 +298,17 @@ export function ChessUX(): JSX.Element {
                     }}
                 />
 
-                <div>
-                    {currentGame?.white.username === playerID
-                        ? currentGame?.white.username
-                        : currentGame?.black.username}
+                <div style={{ lineHeight: "1.5rem" }}>
+                    <b>
+                        {currentGame?.white.username === playerID
+                            ? currentGame?.white.username
+                            : currentGame?.black.username}
+                    </b>
+                    <span
+                        style={{ backgroundColor: "white", color: "black", borderRadius: 4, marginLeft: 8, padding: 4 }}
+                    >
+                        {moves[currentMoveID]?.data?.comment}
+                    </span>
                 </div>
             </div>
             <div style={{ marginLeft: 16, width: 400, paddingLeft: 16 }}>

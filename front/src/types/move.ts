@@ -17,6 +17,8 @@ export interface Move {
     scoreDiff?: number;
     accuracy?: number;
 
+    comment: string;
+
     scoreBefore?: number;
     scoreAfter?: number;
     wdlBefore?: Record<string, number>;
@@ -37,7 +39,7 @@ export function resetMoveIDs() {
     moveID = 0;
 }
 
-export function NewMove(value: cMove, moveNumber: number): Move {
+export function NewMove(value: cMove, moveNumber: number, comment: string): Move {
     return {
         id: moveID++,
 
@@ -45,6 +47,8 @@ export function NewMove(value: cMove, moveNumber: number): Move {
         fen: value.after,
         number: moveNumber,
         cmove: value,
+
+        comment: comment,
 
         scoreComputed: false,
     };
@@ -57,9 +61,8 @@ export async function ComputeMoveScore(node: Node<Move>): Promise<Node<Move>> {
     const nextColor = currentColor === "w" ? "b" : "w";
 
     return new Promise(async (resolve, reject) => {
-        console.log("computing for real for ", move.id);
-        await engineEval(currentColor, move.cmove.before, 2, true).then(async (linesBefore) => {
-            await engineEval(nextColor, move.cmove.after, 2, true).then((linesAfter) => {
+        await engineEval(currentColor, move.cmove.before, 3, false).then(async (linesBefore) => {
+            await engineEval(nextColor, move.cmove.after, 3, false).then((linesAfter) => {
                 let accuracy = 0;
                 let scoreDiff = 0;
 
