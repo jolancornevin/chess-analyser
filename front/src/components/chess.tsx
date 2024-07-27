@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { Chess, SQUARES } from "chess.js";
+import { Chess, SQUARES, Move as cMove } from "chess.js";
 import { DrawShape } from "chessground/draw";
 import * as cg from "chessground/types";
 
 import Chessground from "@react-chess/chessground";
 
-import { ChessComGame, ComputeMoveScore, Line, Move, NewMove, Node, resetMoveIDs } from "../types";
+import { ChessComGame, ComputeMoveScore, Line, LineMove, Move, NewMove, Node, resetMoveIDs } from "../types";
 import { ChessComGames } from "./chesscom";
-import { engineEval, resetEngineCache } from "./engine";
+import { resetEngineCache } from "./engine";
 import { Lines } from "./lines";
 import { Moves } from "./moves";
 
@@ -18,8 +18,24 @@ declare type Color = (typeof colors)[number];
 const playerID = "jolan160";
 const captureSound = new Audio("./sounds/capture.mp3");
 const moveSound = new Audio("./sounds/move-self.mp3");
+const moveCheckSound = new Audio("./sounds/move-check.mp3");
 const promotionSound = new Audio("./sounds/promote.mp3");
 const castleSound = new Audio("./sounds/castle.mp3");
+
+function playSound(move: cMove) {
+    // TODO add check
+    if (move.san.endsWith("+") || move.san.endsWith("#")) {
+        moveCheckSound.play();
+    } else if (move.captured) {
+        captureSound.play();
+    } else if (move.lan === "O-O" || move.lan === "O-O-O") {
+        castleSound.play();
+    } else if (move.promotion) {
+        promotionSound.play();
+    } else {
+        moveSound.play();
+    }
+}
 
 export function ChessUX(): JSX.Element {
     const chess = useMemo(() => new Chess(), []);
@@ -141,42 +157,41 @@ export function ChessUX(): JSX.Element {
 
     // Load a move
     const onMoveClick = useCallback(
-        async (move: Move) => {
+        async (move: LineMove) => {
             console.log(move);
+            playSound(move.cmove);
 
-            // TODO add check
-            if (move.cmove.captured) {
-                captureSound.play();
-            } else if (move.cmove.lan === "O-O" || move.cmove.lan === "O-O-O") {
-                castleSound.play();
-            } else if (move.cmove.promotion) {
-                promotionSound.play();
-            } else {
-                moveSound.play();
-            }
+            chess.load(move.fen);
+            setFen(move.fen);
+            setLastMove([move.cmove.from, move.cmove.to]);
+
+            // do it last, after chess.load is done
+            computeValidMoves();
+        },
+        [chess, setFen, setLastMove],
+    );
+
+    // Load a game move. It does what onMoveClick does + compute the engine
+    // lines
+    const onGameMoveClick = useCallback(
+        async (move: Move) => {
+            onMoveClick(move);
 
             // Update states
             setCurrentMoveID(move.id);
-            chess.load(move.fen);
-            setFen(move.fen);
 
-            // UX
-            setLastMove([move.cmove.from, move.cmove.to]);
             if (move.bestMove) {
                 drawArrow({
                     orig: move.bestMove.slice(0, 2) as cg.Key,
                     dest: move.bestMove.slice(2, 4) as cg.Key,
-                    brush: "green",
+                    brush: "blue",
                 });
             }
 
             // Engines
-            setLines([]);
-
-            const nextColor = move.cmove.color === "w" ? "b" : "w";
-            await engineEval(nextColor, move.fen, 2, true).then((lines) => setLines(lines));
+            setLines(move.linesAfter);
         },
-        [chess, setFen, setLastMove, drawArrow],
+        [drawArrow, onMoveClick],
     );
 
     const onBoardMove = useCallback(
@@ -218,31 +233,28 @@ export function ChessUX(): JSX.Element {
                 return { ...prevMoves, [node.data.id]: node };
             });
 
-            onMoveClick(node.data);
+            onGameMoveClick(node.data);
         },
-        [moves, currentMoveID, chess, nbOfGameMoves, onMoveClick],
+        [moves, currentMoveID, chess, nbOfGameMoves, onGameMoveClick],
     );
 
+    function computeValidMoves() {
+        const dests = new Map();
+
+        // loop through all squares and find legal moves.
+        SQUARES.forEach((square) => {
+            dests.set(
+                square,
+                chess.moves({ square, verbose: true })?.map((m) => m.to),
+            );
+        });
+
+        setAllowedDest(dests);
+    }
     // compute valid moves to tell chessground which move we can do.
-    useEffect(
-        function computeValidMoves() {
-            const dests = new Map();
+    useEffect(computeValidMoves, [chess, currentMoveID]);
 
-            // loop through all squares and find legal moves.
-            SQUARES.forEach((s) => {
-                const ms = chess.moves({ square: s, verbose: true });
-                if (ms.length) {
-                    dests.set(
-                        s,
-                        ms.map((m) => m.to),
-                    );
-                }
-            });
-
-            setAllowedDest(dests);
-        },
-        [chess, currentMoveID],
-    );
+    const playerColor = currentGame?.white.username === playerID ? "w" : "b";
 
     return (
         <div style={{ display: "flex", flexDirection: "row", alignSelf: "flex-start", paddingLeft: 32 }}>
@@ -259,7 +271,9 @@ export function ChessUX(): JSX.Element {
                     <span
                         style={{ backgroundColor: "white", color: "black", borderRadius: 4, marginLeft: 8, padding: 4 }}
                     >
-                        {moves[currentMoveID]?.data?.comment}
+                        {moves[currentMoveID]?.data?.cmove.color !== playerColor
+                            ? moves[currentMoveID]?.data?.comment
+                            : moves[currentMoveID - 1]?.data?.comment}
                     </span>
                 </div>
 
@@ -299,15 +313,13 @@ export function ChessUX(): JSX.Element {
                 />
 
                 <div style={{ lineHeight: "1.5rem" }}>
-                    <b>
-                        {currentGame?.white.username === playerID
-                            ? currentGame?.white.username
-                            : currentGame?.black.username}
-                    </b>
+                    <b>{playerID}</b>
                     <span
                         style={{ backgroundColor: "white", color: "black", borderRadius: 4, marginLeft: 8, padding: 4 }}
                     >
-                        {moves[currentMoveID]?.data?.comment}
+                        {moves[currentMoveID]?.data?.cmove.color === playerColor
+                            ? moves[currentMoveID]?.data?.comment
+                            : moves[currentMoveID - 1]?.data?.comment}
                     </span>
                 </div>
             </div>
@@ -316,13 +328,17 @@ export function ChessUX(): JSX.Element {
                     <div>Analysed in: {computeTime}s</div>
                     <div>Opening: {opening}</div>
 
-                    <Lines linesForNewPos={lines} expectedLine={moves[currentMoveID]?.data?.bestLine} />
+                    <Lines
+                        linesForNewPos={lines}
+                        expectedLine={moves[currentMoveID]?.data?.bestLine}
+                        onMoveClick={onMoveClick}
+                    />
 
                     <div style={{ overflowY: "auto", marginTop: 8, height: 500, border: "1px solid white" }}>
                         {moves[0] !== undefined && (
                             <Moves
                                 firstMove={moves[0]}
-                                onMoveClick={onMoveClick}
+                                onMoveClick={onGameMoveClick}
                                 orientation={orientation}
                                 currentMoveID={currentMoveID}
                             />

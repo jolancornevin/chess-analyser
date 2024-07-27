@@ -1,16 +1,46 @@
 import { useMemo } from "react";
 
-import { Line } from "../types/line";
-
-interface LinesProps {
-    expectedLine?: Line;
-    linesForNewPos: Line[];
-}
+import { Line, LineMove } from "../types/line";
 
 const LINE_HEIGHT = 60;
 let lineID = 0;
 
-export function Lines({ linesForNewPos: _linesForNewPos, expectedLine: _expectedLine }: LinesProps): JSX.Element {
+function LineMoves({
+    line,
+    onMoveClick,
+}: {
+    line: LineMove[];
+    onMoveClick: (move: LineMove) => Promise<void>;
+}): JSX.Element {
+    if (!line) {
+        return <></>;
+    }
+
+    return (
+        <>
+            {line.map((move) => {
+                return (
+                    <span onClick={async () => await onMoveClick(move)} style={{ cursor: "pointer" }}>
+                        {move.cmove.san}{" "}
+                    </span>
+                );
+            })}
+        </>
+    );
+}
+
+interface LinesProps {
+    expectedLine?: Line;
+    linesForNewPos: Line[];
+
+    onMoveClick: (move: LineMove) => Promise<void>;
+}
+
+export function Lines({
+    linesForNewPos: _linesForNewPos,
+    expectedLine: _expectedLine,
+    onMoveClick,
+}: LinesProps): JSX.Element {
     const linesForNewPos = useMemo(() => _linesForNewPos, [_linesForNewPos]);
     const expectedLine = useMemo(() => _expectedLine, [_expectedLine]);
 
@@ -31,7 +61,7 @@ export function Lines({ linesForNewPos: _linesForNewPos, expectedLine: _expected
                             >
                                 {expectedLine.score}
                             </span>
-                            : {expectedLine.line}
+                            : <LineMoves line={expectedLine.moves} onMoveClick={onMoveClick} />
                         </div>
                     )}
                 </div>
@@ -40,6 +70,9 @@ export function Lines({ linesForNewPos: _linesForNewPos, expectedLine: _expected
             New Lines:
             <div style={{ flex: 1, marginTop: 8, height: LINE_HEIGHT * 3, border: "1px solid white" }}>
                 {[0, 1, 2].map((i) => {
+                    if (!linesForNewPos || i >= linesForNewPos.length) {
+                        return <></>;
+                    }
                     const line = linesForNewPos[i];
 
                     return (
@@ -55,7 +88,7 @@ export function Lines({ linesForNewPos: _linesForNewPos, expectedLine: _expected
                                     >
                                         {line.score}
                                     </span>
-                                    : {line.line}
+                                    : <LineMoves line={line.moves} onMoveClick={onMoveClick} />
                                 </>
                             )}
                         </div>

@@ -22,8 +22,10 @@ export async function engineEval(color: Color, fen: string, nbLines: number, qui
             const res = await (await resP).json();
 
             const parsedLines = res.map(
+                // TODO add type back response
                 (line): Line =>
                     NewLine(
+                        fen,
                         line.ScoreCP || line.ScoreMate,
                         line.ScoreMate !== 0 ? "mate" : "cp",
                         line.Line,
@@ -40,6 +42,7 @@ export async function engineEval(color: Color, fen: string, nbLines: number, qui
     return cache[cacheKey];
 }
 
+// TODO test to make sure the order is correct all the times.
 function sortLines(color: Color, lines: Line[]): Line[] {
     const ascLines = lines.sort((a, b) => {
         // negative value if first < the second argument, zero if ===, and a positive value otherwise.
@@ -48,10 +51,32 @@ function sortLines(color: Color, lines: Line[]): Line[] {
         // TODO ------> Maybe it has to be evaluated depending on who's playing ???
 
         if (a.scoreType === "mate" && b.scoreType !== "mate") {
+            if (color === "b") {
+                if (a.rawScore < 0) {
+                    return 1;
+                } else {
+                    return -1;
+                }
+            }
+
+            if (a.rawScore < 0) {
+                return -1;
+            }
             return 1;
         }
         if (a.scoreType !== "mate" && b.scoreType === "mate") {
-            return -1;
+            if (color === "b") {
+                if (b.rawScore < 0) {
+                    return 1;
+                } else {
+                    return -1;
+                }
+            }
+
+            if (b.rawScore < 0) {
+                return -1;
+            }
+            return 1;
         }
 
         if (a.rawScore < 0) {

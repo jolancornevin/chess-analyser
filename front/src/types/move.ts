@@ -29,6 +29,7 @@ export interface Move {
 
     bestMove?: string;
     bestLine?: Line;
+    linesAfter?: Line[];
 
     alternateMoves?: Move[];
 }
@@ -97,7 +98,7 @@ export async function ComputeMoveScore(node: Node<Move>): Promise<Node<Move>> {
                     let playedOnlyMove =
                         wasOnlyMove &&
                         // and we played the move
-                        linesBefore[0].line.startsWith(move.cmove.lan);
+                        linesBefore[0].moves[0]?.cmove.lan === move.cmove.lan;
 
                     console.log({
                         moveNumber: move.number,
@@ -137,8 +138,9 @@ export async function ComputeMoveScore(node: Node<Move>): Promise<Node<Move>> {
                         wasOnlyMove: wasOnlyMove,
                         playedOnlyMove: playedOnlyMove,
 
-                        bestMove: bestLineBefore.line.slice(0, 4),
+                        bestMove: bestLineBefore.moves[0].cmove.lan,
                         bestLine: bestLineBefore,
+                        linesAfter: linesAfter,
                     };
 
                     node.data = newMove;
