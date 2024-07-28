@@ -89,7 +89,7 @@ export function ChessComGames({ playerID, onSelectGame }: ChessComGamesProps): J
                                     ></span>
                                     {game.black.username}
                                 </div>
-                                <div>{draw ? "Draw" : won ? `Won [${adversaryResult}]` : `Lost [${playerResult}]`}</div>
+                                <div>{draw ? "🟰" : won ? `✅ [${adversaryResult}]` : `❌ [${playerResult}]`}</div>
                             </div>
                         </div>
                     );

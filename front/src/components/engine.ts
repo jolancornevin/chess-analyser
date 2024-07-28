@@ -42,58 +42,51 @@ export async function engineEval(color: Color, fen: string, nbLines: number, qui
     return cache[cacheKey];
 }
 
-// TODO test to make sure the order is correct all the times.
-function sortLines(color: Color, lines: Line[]): Line[] {
+export function sortLines(color: Color, lines: Line[]): Line[] {
     const ascLines = lines.sort((a, b) => {
-        // negative value if first < the second argument, zero if ===, and a positive value otherwise.
-        // I want to see the highest score for the line first. Mates are always higher
-
-        // TODO ------> Maybe it has to be evaluated depending on who's playing ???
+        // negative value if first is before the second argument, zero if ===, and a positive value otherwise.
+        // I want to see the highest score for the line first. Mates are always higher.
+        // We sort
+        // 1. low to high mate
+        // 2. high to low negative score
+        // 3. low to high positive score
+        // 4. high to low mate
+        // and at the end, we'll reverse if the color is white
 
         if (a.scoreType === "mate" && b.scoreType !== "mate") {
-            if (color === "b") {
-                if (a.rawScore < 0) {
-                    return 1;
-                } else {
-                    return -1;
-                }
-            }
-
             if (a.rawScore < 0) {
                 return -1;
             }
             return 1;
         }
         if (a.scoreType !== "mate" && b.scoreType === "mate") {
-            if (color === "b") {
-                if (b.rawScore < 0) {
-                    return 1;
-                } else {
-                    return -1;
-                }
-            }
-
             if (b.rawScore < 0) {
-                return -1;
+                return 1;
             }
-            return 1;
+            return -1;
         }
 
-        if (a.rawScore < 0) {
-            if (b.rawScore >= 0) {
+        // for mate, the lowest is last
+        if (a.scoreType === "mate" && b.scoreType === "mate") {
+            if (a.rawScore < 0 && b.rawScore > 0) {
+                return -1;
+            }
+
+            if (b.rawScore < 0 && a.rawScore > 0) {
                 return 1;
-            } else {
-                // we want the highest score first (sorting descending instead of ascending)
-                if (a.rawScore > b.rawScore) {
-                    return -1;
-                } else if (a.rawScore < b.rawScore) {
+            }
+
+            if (b.rawScore < 0 && a.rawScore < 0) {
+                if (a.rawScore < b.rawScore) {
                     return 1;
+                } else if (a.rawScore > b.rawScore) {
+                    return -1;
                 } else {
                     return 0;
                 }
             }
-        } else {
-            // we want the highest score first (sorting descending instead of ascending)
+
+            // both are > 0
             if (a.rawScore < b.rawScore) {
                 return 1;
             } else if (a.rawScore > b.rawScore) {
@@ -103,10 +96,29 @@ function sortLines(color: Color, lines: Line[]): Line[] {
             }
         }
 
-        return 0;
+        if (b.rawScore < 0 && a.rawScore < 0) {
+            if (a.rawScore < b.rawScore) {
+                return -1;
+            } else if (a.rawScore > b.rawScore) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+
+        // we want the highest score first (sorting descending instead of ascending)
+        if (a.rawScore < b.rawScore) {
+            return -1;
+        } else if (a.rawScore > b.rawScore) {
+            return 1;
+        } else {
+            return 0;
+        }
     });
+
     if (color === "w") {
-        return ascLines;
+        return ascLines.reverse();
     }
-    return ascLines.reverse();
+
+    return ascLines;
 }

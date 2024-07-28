@@ -58,6 +58,10 @@ export function NewMove(value: cMove, moveNumber: number, comment: string): Move
 export async function ComputeMoveScore(node: Node<Move>): Promise<Node<Move>> {
     const move = node.data;
 
+    if (move.scoreComputed) {
+        return Promise.resolve(node);
+    }
+
     const currentColor = move.cmove.color;
     const nextColor = currentColor === "w" ? "b" : "w";
 

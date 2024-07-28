@@ -51,6 +51,9 @@ export function ChessUX(): JSX.Element {
     const [opening, setOpening] = useState("");
     const [currentGame, setCurrentGame] = useState<ChessComGame>();
 
+    const [puzzleEnabled, setEnablePuzzle] = useState(false);
+    const [puzzleTargetMove, setPuzzleTargetMove] = useState<LineMove>();
+
     // Moves and computation
     const [moves, setMoves] = useState<Record<number, Node<Move>>>({});
     const [lines, setLines] = useState<Line[]>([]);
@@ -60,6 +63,20 @@ export function ChessUX(): JSX.Element {
     const [currentMoveID, setCurrentMoveID] = useState(0);
 
     let nbOfGameMoves = useRef(-1);
+
+    const computeValidMoves = useCallback(() => {
+        const dests = new Map();
+
+        // loop through all squares and find legal moves.
+        SQUARES.forEach((square) => {
+            dests.set(
+                square,
+                chess.moves({ square, verbose: true })?.map((m) => m.to),
+            );
+        });
+
+        setAllowedDest(dests);
+    }, [chess, setAllowedDest]);
 
     const onPGNChange = useCallback(
         async (pgn: string) => {
@@ -72,7 +89,6 @@ export function ChessUX(): JSX.Element {
 
             const moves: Record<number, Node<Move>> = {};
             let index = 0;
-            let lastMoveID = -1;
 
             let movesAsString = [];
             // start listing every move.
@@ -88,7 +104,6 @@ export function ChessUX(): JSX.Element {
                 const node = new Node(move);
 
                 moves[move.id] = node;
-                lastMoveID = move.id;
 
                 // on init, all ids will follow each others
                 if (index > 0) {
@@ -105,6 +120,8 @@ export function ChessUX(): JSX.Element {
                 return;
             }
 
+            setFen(moves[0].data.fen);
+
             const resP = fetch(`http://127.0.0.1:5001/opening?moves=${movesAsString.join(",")}`);
 
             // const lines = await linesP;
@@ -112,10 +129,8 @@ export function ChessUX(): JSX.Element {
 
             setOpening(res.title);
 
-            setFen(chess.fen());
-
             setMoves(moves);
-            setCurrentMoveID(lastMoveID);
+            setCurrentMoveID(0);
 
             const movesAsArray = Object.values(moves);
 
@@ -158,7 +173,6 @@ export function ChessUX(): JSX.Element {
     // Load a move
     const onMoveClick = useCallback(
         async (move: LineMove) => {
-            console.log(move);
             playSound(move.cmove);
 
             chess.load(move.fen);
@@ -168,13 +182,14 @@ export function ChessUX(): JSX.Element {
             // do it last, after chess.load is done
             computeValidMoves();
         },
-        [chess, setFen, setLastMove],
+        [chess, setFen, setLastMove, computeValidMoves],
     );
 
-    // Load a game move. It does what onMoveClick does + compute the engine
-    // lines
+    // Load a game move. It does what onMoveClick does + compute the engine lines
+    // We don't want the engine if we are clicking on an engine move.
     const onGameMoveClick = useCallback(
-        async (move: Move) => {
+        async (node: Node<Move>) => {
+            const move = node.data;
             onMoveClick(move);
 
             // Update states
@@ -188,14 +203,29 @@ export function ChessUX(): JSX.Element {
                 });
             }
 
-            // Engines
-            setLines(move.linesAfter);
+            // start the engine promize
+            ComputeMoveScore(node).then((scoredMove: Node<Move>) => {
+                setMoves((prevMoves) => {
+                    setLines(scoredMove.data.linesAfter);
+                    return { ...prevMoves, [scoredMove.data.id]: scoredMove };
+                });
+            });
         },
         [drawArrow, onMoveClick],
     );
 
     const onBoardMove = useCallback(
         async (from: cg.Key, to: cg.Key, capturedPiece?: cg.Piece) => {
+            // if we are here, it means that we've found the correct move.
+            // onBoardMove is not called if the move is not among the dest
+            if (puzzleEnabled && puzzleTargetMove) {
+                // if there is a next puzzle, keep going.
+                if (findNextPuzzle()) {
+                    return;
+                }
+                // else, we set the move as usual to validate the last puzzle
+            }
+
             const cMove = chess.move({ from, to });
 
             const move = NewMove(cMove, moves[currentMoveID].data.number, "");
@@ -223,59 +253,97 @@ export function ChessUX(): JSX.Element {
                 }
             }
 
-            ComputeMoveScore(node).then((scoredMove) => {
-                setMoves((prevMoves) => {
-                    return { ...prevMoves, [scoredMove.data.id]: scoredMove };
-                });
-            });
-
+            // set the move without engine data
             setMoves((prevMoves) => {
                 return { ...prevMoves, [node.data.id]: node };
             });
 
-            onGameMoveClick(node.data);
+            onGameMoveClick(node);
         },
-        [moves, currentMoveID, chess, nbOfGameMoves, onGameMoveClick],
+        [puzzleEnabled, puzzleTargetMove, chess, moves, currentMoveID, onGameMoveClick],
     );
 
-    function computeValidMoves() {
-        const dests = new Map();
-
-        // loop through all squares and find legal moves.
-        SQUARES.forEach((square) => {
-            dests.set(
-                square,
-                chess.moves({ square, verbose: true })?.map((m) => m.to),
-            );
-        });
-
-        setAllowedDest(dests);
-    }
     // compute valid moves to tell chessground which move we can do.
-    useEffect(computeValidMoves, [chess, currentMoveID]);
+    useEffect(computeValidMoves, [chess, currentMoveID, computeValidMoves]);
 
     const playerColor = currentGame?.white.username === playerID ? "w" : "b";
 
-    return (
-        <div style={{ display: "flex", flexDirection: "row", alignSelf: "flex-start", paddingLeft: 32 }}>
-            <div style={{ width: 300, flex: 1 }}>
-                <ChessComGames playerID={playerID} onSelectGame={onSelectGame} />
-            </div>
-            <div style={{ flex: 1 }}>
+    const PlayerUX = useCallback(
+        ({ isPlayer }: { isPlayer: boolean }) => {
+            return (
                 <div style={{ lineHeight: "1.5rem" }}>
                     <b>
-                        {currentGame?.white.username === playerID
-                            ? currentGame?.black.username
-                            : currentGame?.white.username}
+                        {isPlayer &&
+                            (currentGame?.white.username === playerID
+                                ? currentGame?.white.username
+                                : currentGame?.black.username)}
+                        {!isPlayer &&
+                            (currentGame?.white.username === playerID
+                                ? currentGame?.black.username
+                                : currentGame?.white.username)}
                     </b>
                     <span
                         style={{ backgroundColor: "white", color: "black", borderRadius: 4, marginLeft: 8, padding: 4 }}
                     >
-                        {moves[currentMoveID]?.data?.cmove.color !== playerColor
-                            ? moves[currentMoveID]?.data?.comment
-                            : moves[currentMoveID - 1]?.data?.comment}
+                        {isPlayer &&
+                            (moves[currentMoveID]?.data?.cmove.color === playerColor
+                                ? moves[currentMoveID]?.data?.comment
+                                : moves[currentMoveID - 1]?.data?.comment)}
+                        {!isPlayer &&
+                            (moves[currentMoveID]?.data?.cmove.color !== playerColor
+                                ? moves[currentMoveID]?.data?.comment
+                                : moves[currentMoveID - 1]?.data?.comment)}
                     </span>
                 </div>
+            );
+        },
+        [currentGame?.black.username, currentGame?.white.username, currentMoveID, moves, playerColor],
+    );
+
+    const findNextPuzzle = useCallback((): boolean => {
+        // we search from currentMoveID + 2 because our currentMoveID is the move before the puzzle.
+        // if we were to look from currentMoveID + 1, we'd always end up on the same puzzle
+        for (let i = currentMoveID + 2 ?? 0; i < nbOfGameMoves.current; i++) {
+            const move = moves[i];
+            if (move.data.wasOnlyMove) {
+                // select the move before the only move.
+                onGameMoveClick(moves[i - 1]);
+
+                console.log(moves[i]);
+                setPuzzleTargetMove(moves[i].data.bestLine.moves[0]);
+                return true;
+            }
+        }
+        // if we haven't found the next puzzle, reset
+        setPuzzleTargetMove(undefined);
+
+        return false;
+    }, [currentMoveID, moves, onGameMoveClick]);
+
+    return (
+        <div style={{ display: "flex", flexDirection: "row", alignSelf: "flex-start", paddingLeft: 32 }}>
+            <div style={{ width: 300, flex: 1 }}>
+                <div style={{ border: "1px solid white", padding: 8, marginBottom: 16 }}>
+                    Enable Puzzle:
+                    <input
+                        type="checkbox"
+                        id="checkbox"
+                        checked={puzzleEnabled}
+                        onChange={() => {
+                            setEnablePuzzle((prev) => !prev);
+                        }}
+                    />
+                    {puzzleEnabled && (
+                        <div>
+                            Find Next puzzle <span onClick={findNextPuzzle}>➡️</span> {puzzleTargetMove ? "✅" : "❌"}
+                        </div>
+                    )}
+                </div>
+
+                <ChessComGames playerID={playerID} onSelectGame={onSelectGame} />
+            </div>
+            <div style={{ flex: 1 }}>
+                <PlayerUX isPlayer={false} />
 
                 <Chessground
                     width={800}
@@ -298,30 +366,26 @@ export function ChessUX(): JSX.Element {
                         },
                         movable: {
                             free: false,
-                            dests: allowedDest,
+                            dests:
+                                // if puzzle, make only the target move possible
+                                puzzleEnabled && puzzleTargetMove
+                                    ? new Map([
+                                          [
+                                              puzzleTargetMove.cmove.from as cg.Key,
+                                              [puzzleTargetMove.cmove.to as cg.Key],
+                                          ],
+                                      ])
+                                    : allowedDest,
+                            // if puzzle, don't show the dest so we don't spoil the target
+                            showDests: !(puzzleEnabled && puzzleTargetMove),
                         },
                         events: {
                             move: onBoardMove,
-                            dropNewPiece: (piece: cg.Piece, key: cg.Key) => {
-                                console.log("dropNewPiece");
-                            },
-                            insert: (elements: cg.Elements) => {
-                                console.log("insert");
-                            },
                         },
                     }}
                 />
 
-                <div style={{ lineHeight: "1.5rem" }}>
-                    <b>{playerID}</b>
-                    <span
-                        style={{ backgroundColor: "white", color: "black", borderRadius: 4, marginLeft: 8, padding: 4 }}
-                    >
-                        {moves[currentMoveID]?.data?.cmove.color === playerColor
-                            ? moves[currentMoveID]?.data?.comment
-                            : moves[currentMoveID - 1]?.data?.comment}
-                    </span>
-                </div>
+                <PlayerUX isPlayer={true} />
             </div>
             <div style={{ marginLeft: 16, width: 400, paddingLeft: 16 }}>
                 <div style={{ height: 700 }}>
@@ -337,7 +401,7 @@ export function ChessUX(): JSX.Element {
                     <div style={{ overflowY: "auto", marginTop: 8, height: 500, border: "1px solid white" }}>
                         {moves[0] !== undefined && (
                             <Moves
-                                firstMove={moves[0]}
+                                startNode={moves[0]}
                                 onMoveClick={onGameMoveClick}
                                 orientation={orientation}
                                 currentMoveID={currentMoveID}

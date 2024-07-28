@@ -23,21 +23,31 @@ function MoveUX({ move, onClick, currentMoveID, orientation }: MoveProps): JSX.E
 
         let score: JSX.Element[] = [];
 
-        if (move.scoreDiff < 60) {
-        } else if (move.scoreDiff < 80) {
-            score.push(
-                <>[{move.scoreBefore > move.scoreAfter && <img height={15} src="img/mistake.png" alt="mistake" />}]</>,
-            );
-        } else if (move.scoreDiff < 150) {
-            score.push(
-                <>
-                    [{move.scoreBefore > move.scoreAfter && <img height={15} src="img/misstake.png" alt="misstake" />}]
-                </>,
-            );
-        } else {
-            if (move.wasOnlyMove && !move.playedOnlyMove) {
+        if (move.wasOnlyMove && !move.playedOnlyMove) {
+            score.push(<>{move.scoreBefore > move.scoreAfter && <img height={15} src="img/miss.png" alt="miss" />}</>);
+        }
+        if (move.wasOnlyMove && move.playedOnlyMove) {
+            score.push(<img height={15} src="img/onlymove.png" alt="onlymove" />);
+        }
+
+        if (!move.wasOnlyMove) {
+            if (move.scoreDiff < 60) {
+            } else if (move.scoreDiff < 80) {
                 score.push(
-                    <>{move.scoreBefore > move.scoreAfter && <img height={15} src="img/miss.png" alt="miss" />}</>,
+                    <>
+                        [{move.scoreBefore > move.scoreAfter && <img height={15} src="img/mistake.png" alt="mistake" />}
+                        ]
+                    </>,
+                );
+            } else if (move.scoreDiff < 150) {
+                score.push(
+                    <>
+                        [
+                        {move.scoreBefore > move.scoreAfter && (
+                            <img height={15} src="img/misstake.png" alt="misstake" />
+                        )}
+                        ]
+                    </>,
                 );
             } else {
                 // TODO blunter only if we love a piece or it's mate
@@ -50,41 +60,55 @@ function MoveUX({ move, onClick, currentMoveID, orientation }: MoveProps): JSX.E
             }
         }
 
-        if (move.wasOnlyMove && move.playedOnlyMove) {
-            score.push(<img height={15} src="img/onlymove.png" alt="onlymove" />);
-        }
-
         const winBefore = move.wdlBefore.win;
         const winAfter = move.wdlAfter.win;
 
-        const drawBefore = move.wdlBefore.draw;
-        const drawAfter = move.wdlAfter.draw;
+        // const drawBefore = move.wdlBefore.draw;
+        // const drawAfter = move.wdlAfter.draw;
 
-        const loseBefore = move.wdlBefore.lose;
-        const loseAfter = move.wdlAfter.lose;
+        // const loseBefore = move.wdlBefore.lose;
+        // const loseAfter = move.wdlAfter.lose;
+
+        const lostPoints = winBefore - winAfter;
+
+        if (winBefore > 200 && winBefore < 800) {
+            if (lostPoints === 0) {
+                score.push(<img height={15} src="img/great.png" alt="great" />);
+            } else if (lostPoints < 20) {
+                score.push(<img height={15} src="img/good.png" alt="good" />);
+            } else if (lostPoints < 50) {
+                score.push(<img height={15} src="img/ok.png" alt="ok" />);
+            } else if (lostPoints < 100) {
+                score.push(<img height={15} src="img/misstake.png" alt="misstake" />);
+            } else if (lostPoints < 200) {
+                score.push(<img height={15} src="img/mistake.png" alt="mistake" />);
+            } else {
+                score.push(<img height={15} src="img/blunter.png" alt="blunter" />);
+            }
+        }
 
         // score.push(<>{(winBefore - winAfter) / 100} {(loseBefore  -loseAfter) / 100} </>);
-        if (winBefore - winAfter > 250) {
-            score.push(<img height={15} src="img/blunter.png" alt="blunter" />);
-        } else if (winBefore - winAfter > 150) {
-            score.push(<img height={15} src="img/mistake.png" alt="mistake" />);
-        } else if (winBefore - winAfter > 50) {
-            score.push(<img height={15} src="img/misstake.png" alt="misstake" />);
-        }
-        // draws
-        else if (drawBefore - drawAfter > 200) {
-            score.push(<img height={15} src="img/mistake.png" alt="mistake" />);
-        } else if (drawBefore - drawAfter > 100) {
-            score.push(<img height={15} src="img/misstake.png" alt="misstake" />);
-        }
-        // wins
-        else if (loseBefore - loseAfter > 250) {
-            score.push(<img height={15} src="img/great.png" alt="great" />);
-        } else if (loseBefore - loseAfter > 150) {
-            score.push(<img height={15} src="img/good.png" alt="good" />);
-        } else if (loseBefore - loseAfter > 50) {
-            score.push(<img height={15} src="img/ok.png" alt="ok" />);
-        }
+        // if (winBefore - winAfter > 250) {
+        //     score.push(<img height={15} src="img/blunter.png" alt="blunter" />);
+        // } else if (winBefore - winAfter > 150) {
+        //     score.push(<img height={15} src="img/mistake.png" alt="mistake" />);
+        // } else if (winBefore - winAfter > 50) {
+        //     score.push(<img height={15} src="img/misstake.png" alt="misstake" />);
+        // }
+        // // draws
+        // else if (drawBefore - drawAfter > 200) {
+        //     score.push(<img height={15} src="img/mistake.png" alt="mistake" />);
+        // } else if (drawBefore - drawAfter > 100) {
+        //     score.push(<img height={15} src="img/misstake.png" alt="misstake" />);
+        // }
+        // // wins
+        // else if (loseBefore - loseAfter > 250) {
+        //     score.push(<img height={15} src="img/great.png" alt="great" />);
+        // } else if (loseBefore - loseAfter > 150) {
+        //     score.push(<img height={15} src="img/good.png" alt="good" />);
+        // } else if (loseBefore - loseAfter > 50) {
+        //     score.push(<img height={15} src="img/ok.png" alt="ok" />);
+        // }
 
         return <>{score}</>;
     }, []);
@@ -104,8 +128,8 @@ function MoveUX({ move, onClick, currentMoveID, orientation }: MoveProps): JSX.E
 }
 
 interface MovesProps {
-    firstMove: Node<Move>;
-    onMoveClick: (move: Move) => Promise<void>;
+    startNode: Node<Move>;
+    onMoveClick: (move: Node<Move>) => Promise<void>;
     orientation: string;
 
     currentMoveID: number;
@@ -113,8 +137,8 @@ interface MovesProps {
     asLine?: boolean;
 }
 
-export function Moves({ firstMove, onMoveClick, orientation, currentMoveID, asLine }: MovesProps): JSX.Element {
-    let move = firstMove;
+export function Moves({ startNode, onMoveClick, orientation, currentMoveID, asLine }: MovesProps): JSX.Element {
+    let move = startNode;
     const moves = [move];
 
     while (move.next) {
@@ -155,7 +179,7 @@ export function Moves({ firstMove, onMoveClick, orientation, currentMoveID, asLi
                                     currentMoveID={currentMoveID}
                                     orientation={orientation}
                                     onClick={async () => {
-                                        await onMoveClick(move.data);
+                                        await onMoveClick(move);
                                     }}
                                 />
                             </div>
@@ -172,7 +196,7 @@ export function Moves({ firstMove, onMoveClick, orientation, currentMoveID, asLi
                                             <div style={{ marginLeft: 8 }}>
                                                 <div style={{ width: "50%" }}></div>
                                                 <Moves
-                                                    firstMove={alternateMove}
+                                                    startNode={alternateMove}
                                                     onMoveClick={onMoveClick}
                                                     orientation={orientation}
                                                     currentMoveID={currentMoveID}
