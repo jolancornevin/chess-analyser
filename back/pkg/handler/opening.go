@@ -29,7 +29,6 @@ func (h *OpeningHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		g.MoveStr(move)
 	}
 
-	// TODO FIX Possible() is basically returning everything
 	openings := h.bookECO.Possible(g.Moves())
 
 	var opening *opening.Opening
@@ -38,7 +37,7 @@ func (h *OpeningHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	for _, o := range openings {
 		c := 0
 		for i, move := range strings.Split(o.PGN(), " ") {
-			if move == moves[i] {
+			if i < len(moves) && move == moves[i] {
 				c += 1
 			}
 		}
