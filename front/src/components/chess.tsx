@@ -61,7 +61,6 @@ export function ChessUX(): JSX.Element {
     const [lines, setLines] = useState<Line[]>([]);
     const [computeTime, setComputeTime] = useState(0);
 
-    // TODO hotkey left and right to move from move to move
     const [currentMoveID, setCurrentMoveID] = useState(0);
 
     let nbOfGameMoves = useRef(-1);
@@ -221,6 +220,35 @@ export function ChessUX(): JSX.Element {
         [drawArrow, onMoveClick],
     );
 
+    const handleKeyDown = useCallback(
+        (event) => {
+            console.log("keydown");
+            switch (event.key) {
+                case "ArrowLeft":
+                    if (currentMoveID - 1 >= 0) {
+                        onGameMoveClick(moves[currentMoveID - 1]);
+                    }
+                    break;
+                case "ArrowRight":
+                    if (currentMoveID + 1 <= nbOfGameMoves.current) {
+                        onGameMoveClick(moves[currentMoveID + 1]);
+                    }
+                    break;
+                default:
+                    return;
+            }
+
+            // prevent default action (eg. page moving up/down)
+            // but consider accessibility (eg. user may want to use keys to choose a radio button)
+            event.preventDefault();
+        },
+        [onGameMoveClick, moves, currentMoveID],
+    );
+    useEffect(() => {
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [handleKeyDown]);
+
     // find the next puzzle in the game i.e positions where there was a significant gain.
     // we do it for both black and white.
     const findNextPuzzle = useCallback((): boolean => {
@@ -242,6 +270,7 @@ export function ChessUX(): JSX.Element {
         }
         // if we haven't found the next puzzle, reset
         setPuzzleTargetMove(undefined);
+        setEnablePuzzle(false);
 
         return false;
     }, [currentMoveID, moves, onGameMoveClick]);

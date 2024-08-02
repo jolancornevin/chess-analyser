@@ -18,9 +18,9 @@ function LineMoves({
 
     return (
         <>
-            {line.map((move) => {
+            {line.map((move, i) => {
                 return (
-                    <span onClick={async () => await onMoveClick(move)} style={{ cursor: "pointer" }}>
+                    <span key={i} onClick={async () => await onMoveClick(move)} style={{ cursor: "pointer" }}>
                         {move.cmove.san}{" "}
                     </span>
                 );
@@ -47,8 +47,8 @@ export function Lines({
     return (
         <>
             {/* show expected line before the move */}
-            Best Line:
-            <div style={{ flex: 1, marginTop: 8, height: LINE_HEIGHT, border: "1px solid white" }}>
+            Best Line before move:
+            <div style={{ flex: 1, marginBottom: 8, height: LINE_HEIGHT, border: "1px solid white" }}>
                 <div style={{ height: `${LINE_HEIGHT}px`, textAlign: "left" }}>
                     {expectedLine !== undefined && (
                         <div style={{ height: `${LINE_HEIGHT}px`, textAlign: "left" }}>
@@ -69,7 +69,7 @@ export function Lines({
             </div>
             {/* show suggested line after the move */}
             New Lines:
-            <div style={{ flex: 1, marginTop: 8, height: LINE_HEIGHT * 3, border: "1px solid white" }}>
+            <div style={{ flex: 1, marginBottom: 8, height: LINE_HEIGHT * 3, border: "1px solid white" }}>
                 {[0, 1, 2].map((i) => {
                     if (!linesForNewPos || i >= linesForNewPos.length) {
                         return <></>;

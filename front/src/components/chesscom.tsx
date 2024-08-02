@@ -50,14 +50,13 @@ export function ChessComGames({ playerID, onSelectGame }: ChessComGamesProps): J
                     const draw = playerResult !== "win" && adversaryResult !== "win";
 
                     return (
-                        <>
+                        <div key={i}>
                             {i + 1 < games.length &&
                                 new Date(game.end_time * 1000).getUTCDate() !==
                                     new Date(games[i + 1].end_time * 1000).getUTCDate() && (
                                     <div>-------------------------------</div>
                                 )}
                             <div
-                                key={i}
                                 style={{
                                     height: 48,
                                     flex: 1,
@@ -98,7 +97,7 @@ export function ChessComGames({ playerID, onSelectGame }: ChessComGamesProps): J
                                     <div>{draw ? "🟰" : won ? `✅ [${adversaryResult}]` : `❌ [${playerResult}]`}</div>
                                 </div>
                             </div>
-                        </>
+                        </div>
                     );
                 })}
             </div>
