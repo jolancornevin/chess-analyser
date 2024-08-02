@@ -2,9 +2,6 @@ import React, { useCallback } from "react";
 
 import { Move, Node } from "../types";
 
-const BLACK_CELL_COLOR = "";
-const WHITE_CELL_COLOR = "#c3d7ff30";
-
 interface MoveProps {
     move: Move;
 
@@ -159,8 +156,6 @@ export function Moves({ startNode, onMoveClick, orientation, currentMoveID, asLi
             >
                 {/* TODO show moves two by two and add [...] when they are alternate moves */}
                 {Object.values(moves).map((move, i): JSX.Element => {
-                    const bgColor = i % 4 >= 2 ? WHITE_CELL_COLOR : BLACK_CELL_COLOR;
-
                     return (
                         <React.Fragment key={move.data.id}>
                             {/* add empty box in case we have alternate moves to show */}

@@ -1,5 +1,7 @@
 import { Chess, Move as cMove } from "chess.js";
 
+import { GetCurrentMaterialCount } from "./game";
+
 export interface LineMove {
     // san: string; // Nxc2
     // lan: string; // d4c2
@@ -16,6 +18,8 @@ export interface Line {
     rawScore: number;
     score: string;
 
+    materialDiff: number;
+
     win: number;
     draw: number;
     lose: number;
@@ -27,6 +31,8 @@ export function NewLine(startFen, rawScore, scoreType, line, win, draw, lose): L
 
     const chess = new Chess();
     chess.load(startFen);
+
+    const scoreBefore = GetCurrentMaterialCount(chess);
 
     let moves = [];
 
@@ -40,6 +46,8 @@ export function NewLine(startFen, rawScore, scoreType, line, win, draw, lose): L
         } as LineMove);
     });
 
+    const scoreAfter = GetCurrentMaterialCount(chess);
+
     return {
         startFen,
         moves,
@@ -47,6 +55,8 @@ export function NewLine(startFen, rawScore, scoreType, line, win, draw, lose): L
         score: `${isMate ? "M" : ""}${score}`, // in pawns
         rawScore: isMate ? rawScore * 1000 : rawScore, // in centipawns
         scoreType,
+
+        materialDiff: scoreAfter.w.total - scoreAfter.b.total - (scoreBefore.w.total - scoreBefore.b.total),
 
         win,
         draw,

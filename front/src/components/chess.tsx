@@ -7,6 +7,7 @@ import * as cg from "chessground/types";
 import Chessground from "@react-chess/chessground";
 
 import { ChessComGame, ComputeMoveScore, Line, LineMove, Move, NewMove, Node, resetMoveIDs } from "../types";
+import { GameScore, GetCurrentMaterialCount } from "../types/game";
 import { ChessComGames } from "./chesscom";
 import { resetEngineCache } from "./engine";
 import { Lines } from "./lines";
@@ -50,6 +51,7 @@ export function ChessUX(): JSX.Element {
     const [allowedDest, setAllowedDest] = useState<Map<cg.Key, cg.Key[]>>(new Map());
     const [opening, setOpening] = useState("");
     const [currentGame, setCurrentGame] = useState<ChessComGame>();
+    const [material, setMaterial] = useState<GameScore>(GetCurrentMaterialCount(chess));
 
     const [puzzleEnabled, setEnablePuzzle] = useState(false);
     const [puzzleTargetMove, setPuzzleTargetMove] = useState<LineMove>();
@@ -77,6 +79,10 @@ export function ChessUX(): JSX.Element {
 
         setAllowedDest(dests);
     }, [chess, setAllowedDest]);
+
+    const computeMaterial = useCallback(() => {
+        setMaterial(GetCurrentMaterialCount(chess));
+    }, [chess, setMaterial]);
 
     const onPGNChange = useCallback(
         async (pgn: string) => {
@@ -181,8 +187,9 @@ export function ChessUX(): JSX.Element {
 
             // do it last, after chess.load is done
             computeValidMoves();
+            computeMaterial();
         },
-        [chess, setFen, setLastMove, computeValidMoves],
+        [chess, setFen, setLastMove, computeValidMoves, computeMaterial],
     );
 
     // Load a game move. It does what onMoveClick does + compute the engine lines
@@ -343,7 +350,23 @@ export function ChessUX(): JSX.Element {
                 <ChessComGames playerID={playerID} onSelectGame={onSelectGame} />
             </div>
             <div style={{ flex: 1 }}>
-                <PlayerUX isPlayer={false} />
+                <PlayerUX
+                    username={
+                        currentGame?.white.username === playerID
+                            ? currentGame?.black.username
+                            : currentGame?.white.username
+                    }
+                    time={
+                        moves[currentMoveID]?.data?.cmove.color === playerColor
+                            ? moves[currentMoveID]?.data?.comment
+                            : moves[currentMoveID - 1]?.data?.comment
+                    }
+                    materialDiff={
+                        currentGame?.white.username === playerID
+                            ? material.b.total - material.w.total
+                            : material.w.total - material.b.total
+                    }
+                />
 
                 <Chessground
                     width={800}
@@ -385,7 +408,23 @@ export function ChessUX(): JSX.Element {
                     }}
                 />
 
-                <PlayerUX isPlayer={true} />
+                <PlayerUX
+                    username={
+                        currentGame?.white.username === playerID
+                            ? currentGame?.white.username
+                            : currentGame?.black.username
+                    }
+                    time={
+                        moves[currentMoveID]?.data?.cmove.color !== playerColor
+                            ? moves[currentMoveID]?.data?.comment
+                            : moves[currentMoveID - 1]?.data?.comment
+                    }
+                    materialDiff={
+                        currentGame?.white.username === playerID
+                            ? material.w.total - material.b.total
+                            : material.b.total - material.w.total
+                    }
+                />
             </div>
             <div style={{ marginLeft: 16, width: 400, paddingLeft: 16 }}>
                 <div style={{ height: 700 }}>

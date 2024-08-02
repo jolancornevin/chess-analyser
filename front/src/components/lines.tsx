@@ -59,7 +59,8 @@ export function Lines({
                                     fontWeight: "800",
                                 }}
                             >
-                                {expectedLine.score}
+                                {expectedLine.score}{" "}
+                                {expectedLine.materialDiff !== 0 && `[${expectedLine.materialDiff}]`}
                             </span>
                             : <LineMoves line={expectedLine.moves} onMoveClick={onMoveClick} />
                         </div>
@@ -87,6 +88,7 @@ export function Lines({
                                         }}
                                     >
                                         {line.score}
+                                        {line.materialDiff !== 0 && `[${line.materialDiff}]`}
                                     </span>
                                     : <LineMoves line={line.moves} onMoveClick={onMoveClick} />
                                 </>
