@@ -50,48 +50,55 @@ export function ChessComGames({ playerID, onSelectGame }: ChessComGamesProps): J
                     const draw = playerResult !== "win" && adversaryResult !== "win";
 
                     return (
-                        <div
-                            key={i}
-                            style={{
-                                height: 48,
-                                flex: 1,
-                                flexDirection: "column",
-                                paddingTop: 8,
-                                cursor: "pointer",
-                                backgroundColor: i === selectedGame ? "#3c63b2ba" : "initial",
-                                margin: "auto",
-                            }}
-                            onClick={async () => {
-                                setSelectedGame(i);
-                                return await onSelectGame(game);
-                            }}
-                        >
-                            <div>
+                        <>
+                            {i + 1 < games.length &&
+                                new Date(game.end_time * 1000).getUTCDate() !==
+                                    new Date(games[i + 1].end_time * 1000).getUTCDate() && (
+                                    <div>-------------------------------</div>
+                                )}
+                            <div
+                                key={i}
+                                style={{
+                                    height: 48,
+                                    flex: 1,
+                                    flexDirection: "column",
+                                    paddingTop: 8,
+                                    cursor: "pointer",
+                                    backgroundColor: i === selectedGame ? "#3c63b2ba" : "initial",
+                                    margin: "auto",
+                                }}
+                                onClick={async () => {
+                                    setSelectedGame(i);
+                                    return await onSelectGame(game);
+                                }}
+                            >
                                 <div>
-                                    <span
-                                        style={{
-                                            backgroundColor: "white",
-                                            width: 8,
-                                            height: 8,
-                                            display: "inline-block",
-                                            marginRight: 8,
-                                        }}
-                                    ></span>
-                                    {game.white.username} VS{" "}
-                                    <span
-                                        style={{
-                                            backgroundColor: "black",
-                                            width: 8,
-                                            height: 8,
-                                            display: "inline-block",
-                                            marginRight: 8,
-                                        }}
-                                    ></span>
-                                    {game.black.username}
+                                    <div>
+                                        <span
+                                            style={{
+                                                backgroundColor: "white",
+                                                width: 8,
+                                                height: 8,
+                                                display: "inline-block",
+                                                marginRight: 8,
+                                            }}
+                                        ></span>
+                                        {game.white.username} VS{" "}
+                                        <span
+                                            style={{
+                                                backgroundColor: "black",
+                                                width: 8,
+                                                height: 8,
+                                                display: "inline-block",
+                                                marginRight: 8,
+                                            }}
+                                        ></span>
+                                        {game.black.username}
+                                    </div>
+                                    <div>{draw ? "🟰" : won ? `✅ [${adversaryResult}]` : `❌ [${playerResult}]`}</div>
                                 </div>
-                                <div>{draw ? "🟰" : won ? `✅ [${adversaryResult}]` : `❌ [${playerResult}]`}</div>
                             </div>
-                        </div>
+                        </>
                     );
                 })}
             </div>
