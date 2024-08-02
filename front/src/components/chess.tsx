@@ -221,6 +221,31 @@ export function ChessUX(): JSX.Element {
         [drawArrow, onMoveClick],
     );
 
+    // find the next puzzle in the game i.e positions where there was a significant gain.
+    // we do it for both black and white.
+    const findNextPuzzle = useCallback((): boolean => {
+        // we search from currentMoveID + 2 because our currentMoveID is the move before the puzzle.
+        // if we were to look from currentMoveID + 1, we'd always end up on the same puzzle
+        for (let i = currentMoveID + 2 ?? 0; i < nbOfGameMoves.current; i++) {
+            const move = moves[i];
+            if (
+                move.data.wasOnlyMove ||
+                move.data.bestLine.materialDiff >= 2 ||
+                move.data.bestLine.materialDiff <= -2
+            ) {
+                // select the move before the only move.
+                onGameMoveClick(moves[i - 1]);
+
+                setPuzzleTargetMove(moves[i].data.bestLine.moves[0]);
+                return true;
+            }
+        }
+        // if we haven't found the next puzzle, reset
+        setPuzzleTargetMove(undefined);
+
+        return false;
+    }, [currentMoveID, moves, onGameMoveClick]);
+
     const onBoardMove = useCallback(
         async (from: cg.Key, to: cg.Key, capturedPiece?: cg.Piece) => {
             // if we are here, it means that we've found the correct move.
@@ -267,65 +292,30 @@ export function ChessUX(): JSX.Element {
 
             onGameMoveClick(node);
         },
-        [puzzleEnabled, puzzleTargetMove, chess, moves, currentMoveID, onGameMoveClick],
+        [puzzleEnabled, puzzleTargetMove, chess, moves, currentMoveID, onGameMoveClick, findNextPuzzle],
     );
 
     // compute valid moves to tell chessground which move we can do.
-    useEffect(computeValidMoves, [chess, currentMoveID, computeValidMoves]);
+    useEffect(computeValidMoves, [chess, computeValidMoves]);
 
     const playerColor = currentGame?.white.username === playerID ? "w" : "b";
 
     const PlayerUX = useCallback(
-        ({ isPlayer }: { isPlayer: boolean }) => {
+        ({ username, time, materialDiff }: { username: string; time: string; materialDiff: number }) => {
             return (
                 <div style={{ lineHeight: "1.5rem" }}>
-                    <b>
-                        {isPlayer &&
-                            (currentGame?.white.username === playerID
-                                ? currentGame?.white.username
-                                : currentGame?.black.username)}
-                        {!isPlayer &&
-                            (currentGame?.white.username === playerID
-                                ? currentGame?.black.username
-                                : currentGame?.white.username)}
-                    </b>
+                    <b>{username}</b>
                     <span
                         style={{ backgroundColor: "white", color: "black", borderRadius: 4, marginLeft: 8, padding: 4 }}
                     >
-                        {isPlayer &&
-                            (moves[currentMoveID]?.data?.cmove.color === playerColor
-                                ? moves[currentMoveID]?.data?.comment
-                                : moves[currentMoveID - 1]?.data?.comment)}
-                        {!isPlayer &&
-                            (moves[currentMoveID]?.data?.cmove.color !== playerColor
-                                ? moves[currentMoveID]?.data?.comment
-                                : moves[currentMoveID - 1]?.data?.comment)}
+                        {time}
                     </span>
+                    <span style={{ marginLeft: 8, padding: 4 }}>{materialDiff > 0 ? materialDiff : ""}</span>
                 </div>
             );
         },
-        [currentGame?.black.username, currentGame?.white.username, currentMoveID, moves, playerColor],
+        [],
     );
-
-    const findNextPuzzle = useCallback((): boolean => {
-        // we search from currentMoveID + 2 because our currentMoveID is the move before the puzzle.
-        // if we were to look from currentMoveID + 1, we'd always end up on the same puzzle
-        for (let i = currentMoveID + 2 ?? 0; i < nbOfGameMoves.current; i++) {
-            const move = moves[i];
-            if (move.data.wasOnlyMove) {
-                // select the move before the only move.
-                onGameMoveClick(moves[i - 1]);
-
-                console.log(moves[i]);
-                setPuzzleTargetMove(moves[i].data.bestLine.moves[0]);
-                return true;
-            }
-        }
-        // if we haven't found the next puzzle, reset
-        setPuzzleTargetMove(undefined);
-
-        return false;
-    }, [currentMoveID, moves, onGameMoveClick]);
 
     return (
         <div style={{ display: "flex", flexDirection: "row", alignSelf: "flex-start", paddingLeft: 32 }}>
