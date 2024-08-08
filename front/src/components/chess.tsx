@@ -9,7 +9,7 @@ import Chessground from "@react-chess/chessground";
 import { ChessComGame, ComputeMoveScore, Line, LineMove, Move, NewMove, Node, resetMoveIDs } from "../types";
 import { GameScore, GetCurrentMaterialCount } from "../types/game";
 import { ChessComGames } from "./chesscom";
-import { resetEngineCache } from "./engine";
+import { EngineWholeGame, resetEngineCache } from "./engine";
 import { Lines } from "./lines";
 import { Moves } from "./moves";
 
@@ -24,7 +24,6 @@ const promotionSound = new Audio("./sounds/promote.mp3");
 const castleSound = new Audio("./sounds/castle.mp3");
 
 function playSound(move: cMove) {
-    // TODO add check
     if (move.san.endsWith("+") || move.san.endsWith("#")) {
         moveCheckSound.play();
     } else if (move.captured) {
@@ -91,8 +90,9 @@ export function ChessUX(): JSX.Element {
             // just to start from 0 again.
             resetMoveIDs();
             resetEngineCache();
+            setLines([]);
 
-            const moves: Record<number, Node<Move>> = {};
+            let moves: Record<number, Node<Move>> = {};
             let index = 0;
 
             let movesAsString = [];
@@ -127,41 +127,22 @@ export function ChessUX(): JSX.Element {
 
             setFen(moves[0].data.fen);
 
-            const resP = fetch(`http://127.0.0.1:5001/opening?moves=${movesAsString.join(",")}`);
+            const openingQuery = await fetch(`http://127.0.0.1:5001/opening?moves=${movesAsString.join(",")}`);
 
-            // const lines = await linesP;
-            const res = await (await resP).json();
+            const opening = await openingQuery.json();
 
-            setOpening(res.title);
+            setOpening(opening.title);
 
             setMoves(moves);
             setCurrentMoveID(0);
 
-            const movesAsArray = Object.values(moves);
-
-            // start processing the move with the engine
-            const batchSize = 10;
             const startTime = performance.now();
 
-            for (let i = 0; i < movesAsArray.length; i += batchSize) {
-                await Promise.all(
-                    movesAsArray
-                        .slice(i, i + batchSize)
-                        // compute only our moves
-                        // .filter((move) => (orientation[0] === move.cmove.color))
-                        .map((move) => {
-                            return ComputeMoveScore(move).then((scoredMove) => {
-                                setMoves((prevMoves) => {
-                                    return { ...prevMoves, [scoredMove.data.id]: scoredMove };
-                                });
-                            });
-                        }),
-                );
-            }
+            setMoves(await EngineWholeGame(pgn, moves));
 
             setComputeTime(Math.round((performance.now() - startTime) / 1000));
         },
-        [chess, setFen],
+        [chess, setFen, setOpening, setMoves, setCurrentMoveID],
     );
 
     // Load a game
@@ -176,7 +157,7 @@ export function ChessUX(): JSX.Element {
     );
 
     // Load a move
-    const onMoveClick = useCallback(
+    const loadMove = useCallback(
         async (move: LineMove) => {
             playSound(move.cmove);
 
@@ -191,12 +172,12 @@ export function ChessUX(): JSX.Element {
         [chess, setFen, setLastMove, computeValidMoves, computeMaterial],
     );
 
-    // Load a game move. It does what onMoveClick does + compute the engine lines
-    // We don't want the engine if we are clicking on an engine move.
-    const onGameMoveClick = useCallback(
+    // Load move WITHIN the current game. It does what loadMove does + a few extra
+    // stuff like changing the current game move in the move list.
+    const loadCurrentGameMove = useCallback(
         async (node: Node<Move>) => {
             const move = node.data;
-            onMoveClick(move);
+            loadMove(move);
 
             // Update states
             setCurrentMoveID(move.id);
@@ -209,15 +190,9 @@ export function ChessUX(): JSX.Element {
                 });
             }
 
-            // start the engine promize
-            ComputeMoveScore(node).then((scoredMove: Node<Move>) => {
-                setMoves((prevMoves) => {
-                    setLines(scoredMove.data.linesAfter);
-                    return { ...prevMoves, [scoredMove.data.id]: scoredMove };
-                });
-            });
+            setLines(move.linesAfter);
         },
-        [drawArrow, onMoveClick],
+        [drawArrow, loadMove],
     );
 
     const handleKeyDown = useCallback(
@@ -226,12 +201,12 @@ export function ChessUX(): JSX.Element {
             switch (event.key) {
                 case "ArrowLeft":
                     if (currentMoveID - 1 >= 0) {
-                        onGameMoveClick(moves[currentMoveID - 1]);
+                        loadCurrentGameMove(moves[currentMoveID - 1]);
                     }
                     break;
                 case "ArrowRight":
                     if (currentMoveID + 1 <= nbOfGameMoves.current) {
-                        onGameMoveClick(moves[currentMoveID + 1]);
+                        loadCurrentGameMove(moves[currentMoveID + 1]);
                     }
                     break;
                 default:
@@ -242,7 +217,7 @@ export function ChessUX(): JSX.Element {
             // but consider accessibility (eg. user may want to use keys to choose a radio button)
             event.preventDefault();
         },
-        [onGameMoveClick, moves, currentMoveID],
+        [loadCurrentGameMove, moves, currentMoveID],
     );
     useEffect(() => {
         document.addEventListener("keydown", handleKeyDown);
@@ -262,7 +237,7 @@ export function ChessUX(): JSX.Element {
                 move.data.bestLine.materialDiff <= -2
             ) {
                 // select the move before the only move.
-                onGameMoveClick(moves[i - 1]);
+                loadCurrentGameMove(moves[i - 1]);
 
                 setPuzzleTargetMove(moves[i].data.bestLine.moves[0]);
                 return true;
@@ -273,7 +248,7 @@ export function ChessUX(): JSX.Element {
         setEnablePuzzle(false);
 
         return false;
-    }, [currentMoveID, moves, onGameMoveClick]);
+    }, [currentMoveID, moves, loadCurrentGameMove]);
 
     const onBoardMove = useCallback(
         async (from: cg.Key, to: cg.Key, capturedPiece?: cg.Piece) => {
@@ -319,9 +294,17 @@ export function ChessUX(): JSX.Element {
                 return { ...prevMoves, [node.data.id]: node };
             });
 
-            onGameMoveClick(node);
+            loadCurrentGameMove(node);
+
+            // start the engine promise
+            ComputeMoveScore(node).then((scoredMove: Node<Move>) => {
+                setMoves((prevMoves) => {
+                    setLines(scoredMove.data.linesAfter);
+                    return { ...prevMoves, [scoredMove.data.id]: scoredMove };
+                });
+            });
         },
-        [puzzleEnabled, puzzleTargetMove, chess, moves, currentMoveID, onGameMoveClick, findNextPuzzle],
+        [puzzleEnabled, puzzleTargetMove, chess, moves, currentMoveID, loadCurrentGameMove, findNextPuzzle],
     );
 
     // compute valid moves to tell chessground which move we can do.
@@ -453,14 +436,14 @@ export function ChessUX(): JSX.Element {
                     <Lines
                         linesForNewPos={lines}
                         expectedLine={moves[currentMoveID]?.data?.bestLine}
-                        onMoveClick={onMoveClick}
+                        onMoveClick={loadMove}
                     />
 
                     <div style={{ overflowY: "auto", marginTop: 8, height: 500, border: "1px solid white" }}>
                         {moves[0] !== undefined && (
                             <Moves
                                 startNode={moves[0]}
-                                onMoveClick={onGameMoveClick}
+                                onMoveClick={loadCurrentGameMove}
                                 orientation={orientation}
                                 currentMoveID={currentMoveID}
                             />

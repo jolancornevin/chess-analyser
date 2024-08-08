@@ -1,9 +1,83 @@
 import { Color } from "chess.js";
 
+import { ComputeMoveScoreFromCache, Move, Node } from "../types";
 import { Line, NewLine } from "../types/line";
 
-let cache = {};
+interface EngineLine {
+    D: number;
+    W: number;
+    L: number;
 
+    Line: string;
+    ScoreCP: number;
+    ScoreMate: number;
+}
+
+export async function EngineWholeGame(
+    pgn: string,
+    moves: Record<number, Node<Move>>,
+): Promise<Record<number, Node<Move>>> {
+    const moveEvalsQuery = await fetch("http://127.0.0.1:5001/engine/game_lines", {
+        method: "POST",
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ pgn: pgn }),
+    });
+    const moveEvals: Array<Array<EngineLine>> = await moveEvalsQuery.json();
+
+    console.log({ moveEvals });
+
+    return Object.fromEntries(
+        Object.entries(moves).map(([moveId, node], i) => {
+            const linesBefore = moveEvals[i];
+            const linesAfter = i + 1 === Object.keys(moves).length ? [] : moveEvals[i + 1];
+
+            const parsedLinesBefore = linesBefore.map(
+                // TODO add TS type for the back response
+                (line): Line =>
+                    NewLine(
+                        node.data.cmove.before,
+                        line.ScoreCP || line.ScoreMate,
+                        line.ScoreMate !== 0 ? "mate" : "cp",
+                        line.Line,
+                        line.W,
+                        line.D,
+                        line.L,
+                    ),
+            );
+
+            const parsedLinesAfter = linesAfter.map(
+                // TODO add TS type for the back response
+                (line): Line =>
+                    NewLine(
+                        node.data.cmove.after,
+                        line.ScoreCP || line.ScoreMate,
+                        line.ScoreMate !== 0 ? "mate" : "cp",
+                        line.Line,
+                        line.W,
+                        line.D,
+                        line.L,
+                    ),
+            );
+
+            const currentColor = node.data.cmove.color;
+            const nextColor = currentColor === "w" ? "b" : "w";
+
+            return [
+                moveId,
+                ComputeMoveScoreFromCache(
+                    node,
+                    sortLines(currentColor, parsedLinesBefore),
+                    sortLines(nextColor, parsedLinesAfter),
+                ),
+            ];
+        }),
+    );
+}
+
+let cache = {};
 export function resetEngineCache() {
     cache = {};
 }
@@ -15,14 +89,14 @@ export async function engineEval(color: Color, fen: string, nbLines: number, qui
         cache[cacheKey] = new Promise(async (resolve, reject) => {
             // const linesP = _engineEval(fen, nbLines);
             const resP = fetch(
-                `http://127.0.0.1:5001/?fenPosition=${fen}&nbLines=${nbLines}&color=${color}&quick=${quick}`,
+                `http://127.0.0.1:5001/engine/move_lines?fenPosition=${fen}&nbLines=${nbLines}&color=${color}&quick=${quick}`,
             );
 
             // const lines = await linesP;
             const res = await (await resP).json();
 
             const parsedLines = res.map(
-                // TODO add type back response
+                // TODO add TS type for the back response
                 (line): Line =>
                     NewLine(
                         fen,

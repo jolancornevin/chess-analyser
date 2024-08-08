@@ -100,7 +100,7 @@ type LinesHandler struct {
 	DB *nutsdb.DB
 }
 
-func NewLinesHandler(db *nutsdb.DB) *LinesHandler {
+func NewGetLinesHandler(db *nutsdb.DB) *LinesHandler {
 	// make sure the bucket exist
 	if err := db.Update(func(tx *nutsdb.Tx) error {
 		return tx.NewBucket(nutsdb.DataStructureBTree, BUCKET)
@@ -113,7 +113,7 @@ func NewLinesHandler(db *nutsdb.DB) *LinesHandler {
 	}
 }
 
-func (h *LinesHandler) getFromDB(fenPosition string) []Line {
+func (h *LinesHandler) getFromCache(fenPosition string) []Line {
 	var cachedLine []byte
 	// ignore the error as we get one when the key it not found
 	err := h.DB.View(func(tx *nutsdb.Tx) (err error) {
@@ -139,7 +139,7 @@ func (h *LinesHandler) getFromDB(fenPosition string) []Line {
 	return res
 }
 
-func (h *LinesHandler) writeFromDB(fenPosition string, lines []Line) {
+func (h *LinesHandler) writeToCache(fenPosition string, lines []Line) {
 	err := h.DB.Update(
 		func(tx *nutsdb.Tx) error {
 			key := []byte(fenPosition)
@@ -149,7 +149,6 @@ func (h *LinesHandler) writeFromDB(fenPosition string, lines []Line) {
 				panic(err)
 			}
 
-			fmt.Println("caching")
 			return tx.Put(BUCKET, key, val, nutsdb.Persistent)
 		})
 	if err != nil {
@@ -167,12 +166,12 @@ func (h *LinesHandler) Handle(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("got / request with %s for %v lines with %s \n", fenPosition, nbLines, color)
 
-	lines := h.getFromDB(fenPosition)
+	lines := h.getFromCache(fenPosition)
 	if len(lines) == 0 {
 		lines = computeLines(fenPosition, nbLines, quick == "true")
 		// only save if we've analysed the position deeply
 		if quick != "true" {
-			h.writeFromDB(fenPosition, lines)
+			h.writeToCache(fenPosition, lines)
 		}
 	}
 

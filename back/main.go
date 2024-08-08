@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gorilla/mux"
 	"github.com/nutsdb/nutsdb"
 	"github.com/rs/cors"
 
@@ -13,23 +14,29 @@ import (
 )
 
 func main() {
-	db, err := nutsdb.Open(
+	nutDB, err := nutsdb.Open(
 		nutsdb.DefaultOptions,
 		nutsdb.WithDir("./tmp/nutsdb"),
 	)
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
+	defer nutDB.Close()
 
 	opening := handler.NewOpeningHandler()
-	lines := handler.NewLinesHandler(db)
+	moveLines := handler.NewGetLinesHandler(nutDB)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", lines.Handle)
-	mux.HandleFunc("/opening", opening.Handle)
+	gameLines := handler.NewGameLinesHandler(nutDB)
 
-	handler := cors.Default().Handler(mux)
+	router := mux.NewRouter()
+	router.HandleFunc("/engine/move_lines", moveLines.Handle)
+	router.HandleFunc("/engine/game_lines", gameLines.Handle).Methods("POST")
+	router.HandleFunc("/opening", opening.Handle)
+
+	// createGames := handler.NewCreateGamesHandler(pgDB)
+	// router.HandleFunc("/games", createGames).Methods("POST")
+
+	handler := cors.Default().Handler(router)
 
 	fmt.Println("started server")
 
