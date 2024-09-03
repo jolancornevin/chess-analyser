@@ -36,7 +36,3 @@ multiple features like typical positions, puzzle from games, typical lost or win
 ## Future improvement
 - https://github.com/gtim/chessdriller
 
-
-# TODO
-- evaluate each move of the game and start classifying them
-- make it possible to visualize a line
