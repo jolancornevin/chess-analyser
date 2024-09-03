@@ -5,6 +5,9 @@ A centipawn is equal to 1/100 of a pawn.
 Get all your chess.com games of the month and get a review on it, with easy visualization of the engines lines.
 All moves are classified as good or not, depending on the engine analysis.
 
+In the back, each position is saved with it's analysis. This allows faster game review and it will open
+multiple features like typical positions, puzzle from games, typical lost or wins, etc.
+
 # Ressources
 - UI: https://github.com/lichess-org/chessground
 - Validation: https://github.com/jhlywa/chess.js
