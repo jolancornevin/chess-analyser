@@ -11,6 +11,7 @@ import (
 	"github.com/nutsdb/nutsdb"
 	"github.com/samber/lo"
 
+	"github.com/jolancornevin/stockfish_http/pkg/entities"
 	"github.com/jolancornevin/stockfish_http/pkg/handler/uci"
 )
 
@@ -32,17 +33,7 @@ func (StringMove) ProcessResponse(e *uci.Engine) error {
 	return nil
 }
 
-type Line struct {
-	Line      string
-	ScoreCP   int
-	ScoreMate int
-
-	W int
-	D int
-	L int
-}
-
-func computeLines(fenPosition, nbLines string, quick bool) []Line {
+func computeLines(fenPosition, nbLines string, quick bool) []entities.Line {
 	// set up engine to use stockfish
 	eng, err := uci.New("stockfish")
 	if err != nil {
@@ -72,14 +63,14 @@ func computeLines(fenPosition, nbLines string, quick bool) []Line {
 		// although rare, it can happen that the engine is not capable of parsing
 		// a position (for immediates mates for instance).
 		// Let just return nothing.
-		fmt.Printf(">>> ERROR: %v", err.Error())
-		return []Line{}
+		fmt.Printf(">>> ERROR: %v\n", err.Error())
+		return []entities.Line{}
 	}
 
 	res := lo.Map(
 		eng.SearchResults().MultiPV,
-		func(info uci.Info, _ int) Line {
-			return Line{
+		func(info uci.Info, _ int) entities.Line {
+			return entities.Line{
 				ScoreCP:   info.Score.CP,
 				ScoreMate: info.Score.Mate,
 				Line:      strings.Join(lo.Map(info.PV, func(move *chess.Move, _ int) string { return move.String() }), " "),
@@ -113,7 +104,7 @@ func NewGetLinesHandler(db *nutsdb.DB) *LinesHandler {
 	}
 }
 
-func (h *LinesHandler) getFromCache(fenPosition string) []Line {
+func (h *LinesHandler) getFromCache(fenPosition string) []entities.Line {
 	var cachedLine []byte
 	// ignore the error as we get one when the key it not found
 	err := h.DB.View(func(tx *nutsdb.Tx) (err error) {
@@ -127,7 +118,7 @@ func (h *LinesHandler) getFromCache(fenPosition string) []Line {
 		panic(err)
 	}
 
-	var res []Line
+	var res []entities.Line
 	if len(cachedLine) > 0 {
 		fmt.Println("cached")
 		err := json.Unmarshal(cachedLine, &res)
@@ -139,7 +130,7 @@ func (h *LinesHandler) getFromCache(fenPosition string) []Line {
 	return res
 }
 
-func (h *LinesHandler) writeToCache(fenPosition string, lines []Line) {
+func (h *LinesHandler) writeToCache(fenPosition string, lines []entities.Line) {
 	err := h.DB.Update(
 		func(tx *nutsdb.Tx) error {
 			key := []byte(fenPosition)
@@ -177,7 +168,7 @@ func (h *LinesHandler) Handle(w http.ResponseWriter, r *http.Request) {
 
 	lines = lo.Map(
 		lines,
-		func(line Line, _ int) Line {
+		func(line entities.Line, _ int) entities.Line {
 			// for some reason, stockfish returns a positive score if the color to move has an advantage and a negative score else
 			// We want to standardize the score with negative = advantage black and positive = advantage white.
 			// We do this by looking at the color playing (for the engine).

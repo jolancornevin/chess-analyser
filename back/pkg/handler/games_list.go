@@ -4,17 +4,17 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type CreateGamesHandler struct {
+type ListGames struct {
 	DB *sqlx.DB
 }
 
-func NewCreateGamesHandler(db *sqlx.DB) *CreateGamesHandler {
-	return &CreateGamesHandler{
+func NewListGames(db *sqlx.DB) *ListGames {
+	return &ListGames{
 		DB: db,
 	}
 }
 
-// func (h *CreateGamesHandler) Handle(w http.ResponseWriter, r *http.Request) {
+// func (h *ListGames) Handle(w http.ResponseWriter, r *http.Request) {
 // 	quick := r.URL.Query().Get("quick")
 
 // 	response, err := json.Marshal(lines)

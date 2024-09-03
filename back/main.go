@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,10 +11,13 @@ import (
 	"github.com/nutsdb/nutsdb"
 	"github.com/rs/cors"
 
+	"github.com/jolancornevin/stockfish_http/pkg/dao"
 	"github.com/jolancornevin/stockfish_http/pkg/handler"
 )
 
 func main() {
+	ctx := context.Background()
+
 	nutDB, err := nutsdb.Open(
 		nutsdb.DefaultOptions,
 		nutsdb.WithDir("./tmp/nutsdb"),
@@ -23,18 +27,32 @@ func main() {
 	}
 	defer nutDB.Close()
 
-	opening := handler.NewOpeningHandler()
-	moveLines := handler.NewGetLinesHandler(nutDB)
+	stopper, err := dao.StartDB()
+	if err != nil {
+		panic(err)
+	}
+	defer stopper.Stop()
 
-	gameLines := handler.NewGameLinesHandler(nutDB)
+	pg, err := dao.Connect(ctx)
+	if err != nil {
+		panic(err)
+	}
+	defer pg.Conn().Close(ctx)
 
 	router := mux.NewRouter()
+
+	moveLines := handler.NewGetLinesHandler(nutDB)
 	router.HandleFunc("/engine/move_lines", moveLines.Handle)
-	router.HandleFunc("/engine/game_lines", gameLines.Handle).Methods("POST")
+
+	opening := handler.NewOpeningHandler()
 	router.HandleFunc("/opening", opening.Handle)
 
-	// createGames := handler.NewCreateGamesHandler(pgDB)
-	// router.HandleFunc("/games", createGames).Methods("POST")
+	createGames := handler.NewCreateGame(pg, nutDB)
+	// make it a POST because the PGN can be big and we don't want that in the query params
+	router.HandleFunc("/games", createGames.Handle).Methods("POST")
+
+	gameLines := handler.NewGameLinesHandler(pg)
+	router.HandleFunc("/games/{id}", gameLines.Handle).Methods("GET")
 
 	handler := cors.Default().Handler(router)
 
