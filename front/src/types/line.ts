@@ -36,6 +36,7 @@ export function NewLine(startFen, rawScore, scoreType, line, win, draw, lose): L
 
     let moves = [];
 
+    console.log({ line });
     line.split(" ").forEach((move: string) => {
         // move is of format: c1b2. We want a more human format, but also
         // to keep the from and to in order to draw arrows

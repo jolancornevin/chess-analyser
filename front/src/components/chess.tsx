@@ -6,6 +6,7 @@ import * as cg from "chessground/types";
 
 import Chessground from "@react-chess/chessground";
 
+import { GetOpening } from "../api/opening";
 import { ChessComGame, ComputeMoveScore, Line, LineMove, Move, NewMove, Node, resetMoveIDs } from "../types";
 import { GameScore, GetCurrentMaterialCount } from "../types/game";
 import { ChessComGames } from "./chesscom";
@@ -83,8 +84,8 @@ export function ChessUX(): JSX.Element {
     }, [chess, setMaterial]);
 
     const onPGNChange = useCallback(
-        async (pgn: string) => {
-            chess.loadPgn(pgn);
+        async (game: ChessComGame) => {
+            chess.loadPgn(game.pgn);
             const comments = chess.getComments();
 
             // just to start from 0 again.
@@ -127,9 +128,7 @@ export function ChessUX(): JSX.Element {
 
             setFen(moves[0].data.fen);
 
-            const openingQuery = await fetch(`http://127.0.0.1:5001/opening?moves=${movesAsString.join(",")}`);
-
-            const opening = await openingQuery.json();
+            const opening = await GetOpening(movesAsString.join(","));
 
             setOpening(opening.title);
 
@@ -138,7 +137,7 @@ export function ChessUX(): JSX.Element {
 
             const startTime = performance.now();
 
-            setMoves(await EngineWholeGame(pgn, moves));
+            setMoves(await EngineWholeGame(game.uuid, game.pgn, new Date(game.end_time).toUTCString(), moves));
 
             setComputeTime(Math.round((performance.now() - startTime) / 1000));
         },
@@ -148,7 +147,7 @@ export function ChessUX(): JSX.Element {
     // Load a game
     const onSelectGame = useCallback(
         async (game: ChessComGame) => {
-            onPGNChange(game.pgn);
+            onPGNChange(game);
             setCurrentGame(game);
 
             setOrientation(game.white.username === playerID ? "white" : "black");

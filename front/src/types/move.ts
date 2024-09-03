@@ -93,25 +93,31 @@ function computeMove(node: Node<Move>, linesBefore: Line[], linesAfter: Line[]) 
 
     const currentColor = move.cmove.color;
 
-    if (linesBefore.length > 0 && linesAfter.length > 0) {
+    if (linesBefore.length > 0) {
         const bestLineBefore = linesBefore[0];
 
         // taking the last one because we want the best line for our opponent
-        const bestLineAfter = linesAfter[0];
+        let bestLineAfter = null;
 
-        const winPercentBefore = (2 / (1 + Math.exp(-0.00368208 * bestLineBefore.rawScore)) - 1) * 100;
-        const winPercentAfter = (2 / (1 + Math.exp(-0.00368208 * bestLineAfter.rawScore)) - 1) * 100;
+        let winPercentBefore = 0;
+        let winPercentAfter = 0;
 
-        if (winPercentAfter > winPercentBefore) {
-            accuracy = 100;
-        } else {
-            accuracy = Math.round(
-                103.1668100711649 * Math.exp(-0.04354415386753951 * (winPercentBefore - winPercentAfter)) -
-                    3.166924740191411,
-            );
+        // a typical example where linesAfter.length == 0 is after we've played mate move (last move)
+        if (linesAfter.length > 0) {
+            bestLineAfter = linesAfter[0];
+            winPercentBefore = (2 / (1 + Math.exp(-0.00368208 * bestLineBefore.rawScore)) - 1) * 100;
+            winPercentAfter = (2 / (1 + Math.exp(-0.00368208 * bestLineAfter.rawScore)) - 1) * 100;
+
+            if (winPercentAfter > winPercentBefore) {
+                accuracy = 100;
+            } else {
+                accuracy = Math.round(
+                    103.1668100711649 * Math.exp(-0.04354415386753951 * (winPercentBefore - winPercentAfter)) -
+                        3.166924740191411,
+                );
+            }
+            scoreDiff = bestLineBefore.rawScore - bestLineAfter.rawScore;
         }
-
-        scoreDiff = bestLineBefore.rawScore - bestLineAfter.rawScore;
 
         let wasOnlyMove =
             // engine found more than one line
@@ -125,18 +131,6 @@ function computeMove(node: Node<Move>, linesBefore: Line[], linesAfter: Line[]) 
             // and we played the move
             linesBefore[0].moves[0]?.cmove.lan === move.cmove.lan;
 
-        console.log({
-            moveNumber: move.number,
-            move,
-            linesBefore,
-            bestLineBefore,
-            winPercentBefore,
-            linesAfter,
-            bestLineAfter,
-            winPercentAfter,
-            accuracy,
-            scoreDiff,
-        });
         const newMove = {
             ...move,
 
@@ -146,7 +140,7 @@ function computeMove(node: Node<Move>, linesBefore: Line[], linesAfter: Line[]) 
             accuracy: accuracy,
 
             scoreBefore: bestLineBefore.rawScore,
-            scoreAfter: bestLineAfter.rawScore,
+            scoreAfter: bestLineAfter ? bestLineAfter.rawScore : 0,
 
             wdlBefore: {
                 win: bestLineBefore.win,
@@ -155,9 +149,9 @@ function computeMove(node: Node<Move>, linesBefore: Line[], linesAfter: Line[]) 
             },
             wdlAfter: {
                 // invert win and lose on purpose to adapt to wdl relative to move
-                win: bestLineAfter.lose,
-                lose: bestLineAfter.win,
-                draw: bestLineAfter.draw,
+                win: bestLineAfter ? bestLineAfter.lose : 0,
+                lose: bestLineAfter ? bestLineAfter.win : 0,
+                draw: bestLineAfter ? bestLineAfter.draw : 0,
             },
 
             wasOnlyMove: wasOnlyMove,
@@ -168,6 +162,7 @@ function computeMove(node: Node<Move>, linesBefore: Line[], linesAfter: Line[]) 
             linesAfter: linesAfter,
         };
 
+        console.log({ newMove });
         node.data = newMove;
         return node;
     }

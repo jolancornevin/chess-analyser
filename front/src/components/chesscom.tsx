@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import { GetGames } from "../api/chesscom";
 import { ChessComGame } from "../types";
 
 interface ChessComGamesProps {
@@ -16,17 +17,7 @@ export function ChessComGames({ playerID, onSelectGame }: ChessComGamesProps): J
             return;
         }
 
-        const date = new Date();
-
-        let month = date.getUTCMonth() + 1;
-
-        // API: https://www.chess.com/news/view/published-data-api#pubapi-endpoint-games
-        const gamesP = fetch(
-            `https://api.chess.com/pub/player/${playerID}/games/${date.getFullYear()}/${(month < 9 ? "0" : "") + month}`,
-        );
-
-        const games = await (await gamesP).json();
-        setGames(games.games.reverse());
+        setGames(await GetGames(playerID));
     }, [playerID]);
 
     return (
